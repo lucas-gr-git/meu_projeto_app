@@ -8,21 +8,16 @@ from datetime import datetime, timedelta
 import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
-import json
-import requests
-
-# ==============================================================================
-# --- SESSÃO CUSTOMIZADA PARA BURLAR BLOQUEIO DE IP NO CLOUD ---
-# ==============================================================================
-session_yf = requests.Session()
-session_yf.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-})
 
 # ==============================================================================
 # --- CONFIGURAÇÃO DA PÁGINA ---
 # ==============================================================================
-st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
+st.set_page_config(
+    page_title="Terminal B3", 
+    layout="wide", 
+    page_icon="📊"
+)
+
 st.title("🖥️ Terminal Profissional de Inteligência Mercado - B3")
 st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notícias em Tempo Real.")
 
@@ -30,19 +25,80 @@ st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notí
 # --- LISTA DAS TOP 70 AÇÕES SEPARADAS POR SETOR ---
 # ==============================================================================
 ativos_setores = {
-    'ITUB4.SA': 'Financeiro', 'BBDC4.SA': 'Financeiro', 'BBAS3.SA': 'Financeiro', 'SANB11.SA': 'Financeiro', 'BPAC11.SA': 'Financeiro', 'B3SA3.SA': 'Financeiro', 'BBSE3.SA': 'Financeiro', 'CXSE3.SA': 'Financeiro', 'IRBR3.SA': 'Financeiro', 'PSSA3.SA': 'Financeiro',
-    'PETR4.SA': 'Petróleo e Gás', 'PETR3.SA': 'Petróleo e Gás', 'PRIO3.SA': 'Petróleo e Gás', 'RECV3.SA': 'Petróleo e Gás', 'ENAT3.SA': 'Petróleo e Gás', 'RRRP3.SA': 'Petróleo e Gás', 'UGPA3.SA': 'Petróleo e Gás', 'VBBR3.SA': 'Petróleo e Gás', 'CSAN3.SA': 'Petróleo e Gás',
-    'VALE3.SA': 'Mineração', 'GGBR4.SA': 'Mineração', 'GOAU4.SA': 'Mineração', 'CSNA3.SA': 'Mineração', 'USIM5.SA': 'Mineração', 'CMIN3.SA': 'Mineração', 'BRAP4.SA': 'Mineração',
-    'ELET3.SA': 'Energia', 'ELET6.SA': 'Energia', 'EQTL3.SA': 'Energia', 'CMIG4.SA': 'Energia', 'CPLE6.SA': 'Energia', 'ENGI11.SA': 'Energia', 'TAEE11.SA': 'Energia', 'TRPL4.SA': 'Energia', 'EGIE3.SA': 'Energia',
-    'WEGE3.SA': 'Indústria', 'EMBR3.SA': 'Indústria',
-    'LREN3.SA': 'Varejo', 'MGLU3.SA': 'Varejo', 'ARZZ3.SA': 'Varejo', 'ALOS3.SA': 'Varejo', 'RENT3.SA': 'Varejo', 'NTCO3.SA': 'Varejo', 'ASAI3.SA': 'Varejo', 'CRFB3.SA': 'Varejo', 'PCAR3.SA': 'Varejo', 'VIVA3.SA': 'Varejo',
-    'HAPV3.SA': 'Saúde', 'RDOR3.SA': 'Saúde', 'RADL3.SA': 'Saúde', 'FLRY3.SA': 'Saúde', 'MATD3.SA': 'Saúde',
-    'ABEV3.SA': 'Alimentos e Bebidas', 'JBSS3.SA': 'Alimentos e Bebidas', 'MRFG3.SA': 'Alimentos e Bebidas', 'BEEF3.SA': 'Alimentos e Bebidas', 'BRFS3.SA': 'Alimentos e Bebidas', 'SMTO3.SA': 'Alimentos e Bebidas',
-    'RAIL3.SA': 'Logística', 'CCRO3.SA': 'Logística', 'AZUL4.SA': 'Logística', 'GOLL4.SA': 'Logística',
-    'VIVT3.SA': 'Telecom e TI', 'TIMS3.SA': 'Telecom e TI', 'TOTVS3.SA': 'Telecom e TI',
-    'SBSP3.SA': 'Saneamento', 'CSMG3.SA': 'Saneamento', 'SAPR11.SA': 'Saneamento',
-    'SUZB3.SA': 'Papel e Celulose', 'KLBN11.SA': 'Papel e Celulose',
-    'CYRE3.SA': 'Construção', 'MRVE3.SA': 'Construção', 'EZTC3.SA': 'Construção', 'TEND3.SA': 'Construção'
+    'ITUB4.SA': 'Financeiro', 
+    'BBDC4.SA': 'Financeiro', 
+    'BBAS3.SA': 'Financeiro', 
+    'SANB11.SA': 'Financeiro', 
+    'BPAC11.SA': 'Financeiro', 
+    'B3SA3.SA': 'Financeiro', 
+    'BBSE3.SA': 'Financeiro', 
+    'CXSE3.SA': 'Financeiro', 
+    'IRBR3.SA': 'Financeiro', 
+    'PSSA3.SA': 'Financeiro',
+    'PETR4.SA': 'Petróleo e Gás', 
+    'PETR3.SA': 'Petróleo e Gás', 
+    'PRIO3.SA': 'Petróleo e Gás', 
+    'RECV3.SA': 'Petróleo e Gás', 
+    'ENAT3.SA': 'Petróleo e Gás', 
+    'RRRP3.SA': 'Petróleo e Gás', 
+    'UGPA3.SA': 'Petróleo e Gás', 
+    'VBBR3.SA': 'Petróleo e Gás', 
+    'CSAN3.SA': 'Petróleo e Gás',
+    'VALE3.SA': 'Mineração', 
+    'GGBR4.SA': 'Mineração', 
+    'GOAU4.SA': 'Mineração', 
+    'CSNA3.SA': 'Mineração', 
+    'USIM5.SA': 'Mineração', 
+    'CMIN3.SA': 'Mineração', 
+    'BRAP4.SA': 'Mineração',
+    'ELET3.SA': 'Energia', 
+    'ELET6.SA': 'Energia', 
+    'EQTL3.SA': 'Energia', 
+    'CMIG4.SA': 'Energia', 
+    'CPLE6.SA': 'Energia', 
+    'ENGI11.SA': 'Energia', 
+    'TAEE11.SA': 'Energia', 
+    'TRPL4.SA': 'Energia', 
+    'EGIE3.SA': 'Energia',
+    'WEGE3.SA': 'Indústria', 
+    'EMBR3.SA': 'Indústria',
+    'LREN3.SA': 'Varejo', 
+    'MGLU3.SA': 'Varejo', 
+    'ARZZ3.SA': 'Varejo', 
+    'ALOS3.SA': 'Varejo', 
+    'RENT3.SA': 'Varejo', 
+    'NTCO3.SA': 'Varejo', 
+    'ASAI3.SA': 'Varejo', 
+    'CRFB3.SA': 'Varejo', 
+    'PCAR3.SA': 'Varejo', 
+    'VIVA3.SA': 'Varejo',
+    'HAPV3.SA': 'Saúde', 
+    'RDOR3.SA': 'Saúde', 
+    'RADL3.SA': 'Saúde', 
+    'FLRY3.SA': 'Saúde', 
+    'MATD3.SA': 'Saúde',
+    'ABEV3.SA': 'Alimentos e Bebidas', 
+    'JBSS3.SA': 'Alimentos e Bebidas', 
+    'MRFG3.SA': 'Alimentos e Bebidas', 
+    'BEEF3.SA': 'Alimentos e Bebidas', 
+    'BRFS3.SA': 'Alimentos e Bebidas', 
+    'SMTO3.SA': 'Alimentos e Bebidas',
+    'RAIL3.SA': 'Logística', 
+    'CCRO3.SA': 'Logística', 
+    'AZUL4.SA': 'Logística', 
+    'GOLL4.SA': 'Logística',
+    'VIVT3.SA': 'Telecom e TI', 
+    'TIMS3.SA': 'Telecom e TI', 
+    'TOTVS3.SA': 'Telecom e TI',
+    'SBSP3.SA': 'Saneamento', 
+    'CSMG3.SA': 'Saneamento', 
+    'SAPR11.SA': 'Saneamento',
+    'SUZB3.SA': 'Papel e Celulose', 
+    'KLBN11.SA': 'Papel e Celulose',
+    'CYRE3.SA': 'Construção', 
+    'MRVE3.SA': 'Construção', 
+    'EZTC3.SA': 'Construção', 
+    'TEND3.SA': 'Construção'
 }
 ativos_lista = list(ativos_setores.keys())
 
@@ -53,8 +109,8 @@ ativos_lista = list(ativos_setores.keys())
 def carregar_dados_geral(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
-    # Passando a sessão mascarada para garantir que o download não seja barrado
-    dados = yf.download(ativos, start=inicio, end=hoje, session=session_yf)
+    # Removido o argumento de sessão manual. Deixando o YFinance lidar nativamente com curl_cffi.
+    dados = yf.download(ativos, start=inicio, end=hoje)
     return dados['Close']
 
 @st.cache_data(ttl=600)
@@ -70,34 +126,63 @@ def buscar_noticias_google(ativo):
             
         root = ET.fromstring(xml_data)
         noticias = []
+        
         for item in root.findall('.//item')[:6]:
             titulo = item.find('title').text
-            if titulo and titulo != "None" and "Sem título" not in titulo and len(titulo) > 5:
+            
+            # Filtro robusto para evitar exibir componentes vazios
+            if titulo is not None and titulo != "None" and "Sem título" not in titulo and len(titulo) > 5:
                 link = item.find('link').text
-                fonte = item.find('source').text if item.find('source') is not None else 'Google News'
+                
+                fonte_tag = item.find('source')
+                if fonte_tag is not None:
+                    fonte = fonte_tag.text
+                else:
+                    fonte = 'Google News'
+                    
                 pub_date = item.find('pubDate').text
+                
                 try:
                     partes = pub_date.split(' ')
                     data_formatada = f"{partes[1]} {partes[2]} {partes[3]} • {partes[4][:5]}"
                 except:
                     data_formatada = pub_date
-                noticias.append({'title': titulo, 'link': link, 'publisher': fonte, 'time': data_formatada})
+                    
+                noticias.append({
+                    'title': titulo, 
+                    'link': link, 
+                    'publisher': fonte, 
+                    'time': data_formatada
+                })
+                
         return noticias
     except Exception as e:
         return []
 
 def fmt_br(val, is_pct=False, currency=False):
-    if pd.isna(val) or val is None or val == "-": return "-"
+    if pd.isna(val) or val is None or val == "-": 
+        return "-"
+    
     texto = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    if is_pct: return f"{texto}%"
-    if currency: return f"R$ {texto}"
+    
+    if is_pct: 
+        return f"{texto}%"
+    
+    if currency: 
+        return f"R$ {texto}"
+        
     return texto
 
 def cor_variacao(val):
-    if pd.isna(val) or val == "-": return "#FFFFFF"
-    if val > 0: return "#228B22"
-    elif val < 0: return "#B22222"
-    else: return "#FFFFFF"
+    if pd.isna(val) or val == "-": 
+        return "#FFFFFF"
+        
+    if val > 0: 
+        return "#228B22"
+    elif val < 0: 
+        return "#B22222"
+    else: 
+        return "#FFFFFF"
 
 # ==============================================================================
 # --- PROCESSAMENTO GERAL ---
@@ -107,6 +192,7 @@ resultados = []
 
 for ativo in ativos_lista:
     df = pd.DataFrame()
+    
     if ativo in precos_fechamento.columns:
         df['Close'] = precos_fechamento[ativo]
         
@@ -115,21 +201,55 @@ for ativo in ativos_lista:
         df['SMA50'] = df['Close'].rolling(window=50).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
         
-        ultimo_preco = float(df['Close'].dropna().iloc[-1]) if not df['Close'].dropna().empty else 0
-        sma20 = float(df['SMA20'].dropna().iloc[-1]) if not df['SMA20'].dropna().empty else 0
-        sma50 = float(df['SMA50'].dropna().iloc[-1]) if not df['SMA50'].dropna().empty else 0
-        sma200 = float(df['SMA200'].dropna().iloc[-1]) if not df['SMA200'].dropna().empty else 0
+        # Validação do último preço
+        serie_limpa = df['Close'].dropna()
+        if not serie_limpa.empty:
+            ultimo_preco = float(serie_limpa.iloc[-1])
+        else:
+            ultimo_preco = 0
+            
+        # Validação das médias para o dia atual
+        serie_sma20 = df['SMA20'].dropna()
+        if not serie_sma20.empty:
+            sma20 = float(serie_sma20.iloc[-1])
+        else:
+            sma20 = 0
+            
+        serie_sma50 = df['SMA50'].dropna()
+        if not serie_sma50.empty:
+            sma50 = float(serie_sma50.iloc[-1])
+        else:
+            sma50 = 0
+            
+        serie_sma200 = df['SMA200'].dropna()
+        if not serie_sma200.empty:
+            sma200 = float(serie_sma200.iloc[-1])
+        else:
+            sma200 = 0
+            
+        # Variação Diária (%)
+        if len(serie_limpa) > 1:
+            variacao_diaria = float(serie_limpa.pct_change().iloc[-1] * 100)
+        else:
+            variacao_diaria = 0.0
+            
+        # Definição das Tendências
+        tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
+        tendencia_media = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         
-        variacao_diaria = float(df['Close'].dropna().pct_change().iloc[-1] * 100) if len(df['Close'].dropna()) > 1 else 0.0
+        if sma200 > 0:
+            tendencia_longa = 'Alta' if ultimo_preco > sma200 else 'Baixa'
+        else:
+            tendencia_longa = 'N/A'
         
         resultados.append({
             'Ativo': ativo.replace('.SA', ''), 
             'Setor': ativos_setores[ativo], 
             'Preço (R$)': round(ultimo_preco, 2),
             'Variação (%)': round(variacao_diaria, 2), 
-            'Tendência (50D)': 'Alta' if ultimo_preco > sma50 else 'Baixa',
-            'Tendência (100D)': 'Alta' if ultimo_preco > sma50 else 'Baixa',
-            'Tendência (200D)': 'Alta' if ultimo_preco > sma200 else 'Baixa' if sma200 > 0 else 'N/A'
+            'Tendência (50D)': tendencia_curta,
+            'Tendência (100D)': tendencia_media,
+            'Tendência (200D)': tendencia_longa
         })
 
 df_resumo = pd.DataFrame(resultados)
@@ -137,107 +257,207 @@ df_resumo = pd.DataFrame(resultados)
 # ==============================================================================
 # --- CRIAÇÃO DAS ABAS ---
 # ==============================================================================
-tab_visao_geral, tab_analise_individual = st.tabs(["🌐 Visão Geral do Mercado", "🔬 Análise Detalhada por Ativo"])
+aba_visao_geral, aba_analise_individual = st.tabs([
+    "🌐 Visão Geral do Mercado", 
+    "🔬 Análise Detalhada por Ativo"
+])
 
-with tab_visao_geral:
+# ==============================================================================
+# --- ABA 1: VISÃO GERAL DO MERCADO ---
+# ==============================================================================
+with aba_visao_geral:
     st.markdown("### 📊 Mapa de Calor do Mercado")
     
-    ids = ["B3"]; labels = ["B3"]; parents = [""]; values = [0]; colors = ["#FFFFFF"]; customdata = [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
+    # Listas para construção do Treemap do Plotly
+    ids = ["B3"]
+    labels = ["B3"]
+    parents = [""]
+    values = [0]
+    colors = ["#FFFFFF"]
+    customdata = [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
     
+    # Criando os nós dos Setores
     for setor in df_resumo['Setor'].unique():
-        ids.append(setor); labels.append(setor); parents.append("B3"); values.append(0); colors.append("#FFFFFF")
+        ids.append(setor)
+        labels.append(setor)
+        parents.append("B3")
+        values.append(0)
+        colors.append("#FFFFFF")
         customdata.append([f"<b>Setor: {setor}</b>", f"<b>{setor}</b>"])
-        ids.append(setor + "_fantasma"); labels.append(""); parents.append(setor); values.append(0.000001); colors.append("#FFFFFF"); customdata.append(["", ""])
-
-    for _, row in df_resumo.iterrows():
-        ids.append(row['Ativo']); labels.append(row['Ativo']); parents.append(row['Setor']); values.append(1)
-        var = row['Variação (%)']; preco = row['Preço (R$)']
-        colors.append("#228B22" if var > 0.05 else "#B22222" if var < -0.05 else "#708090")
         
+        # Nó fantasma para forçar a cor do cabeçalho
+        ids.append(setor + "_fantasma")
+        labels.append("")
+        parents.append(setor)
+        values.append(0.000001)
+        colors.append("#FFFFFF")
+        customdata.append(["", ""])
+
+    # Criando os nós dos Ativos
+    for index, row in df_resumo.iterrows():
+        ids.append(row['Ativo'])
+        labels.append(row['Ativo'])
+        parents.append(row['Setor'])
+        values.append(1)
+        
+        var = row['Variação (%)']
+        preco = row['Preço (R$)']
+        
+        if var > 0.05:
+            colors.append("#228B22") # Verde
+        elif var < -0.05:
+            colors.append("#B22222") # Vermelho
+        else:
+            colors.append("#708090") # Cinza neutro
+            
         preco_br = fmt_br(preco)
         var_br = f"{var:+.2f}%".replace(".", ",")
         
-        hover = f"<b>{row['Ativo']}</b><br>Var: {var_br}<br>Preço: R$ {preco_br}"
-        block = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
-        customdata.append([hover, block])
+        hover_text = f"<b>{row['Ativo']}</b><br>Var: {var_br}<br>Preço: R$ {preco_br}"
+        block_text = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
+        customdata.append([hover_text, block_text])
 
-    fig_treemap = go.Figure(go.Treemap(
-        ids=ids, labels=labels, parents=parents, values=values, marker_colors=colors,
-        customdata=customdata, texttemplate="%{customdata[1]}", hovertemplate="%{customdata[0]}<extra></extra>", textfont=dict(color="black")
+    # Plotando o Mapa de Calor
+    figura_treemap = go.Figure(go.Treemap(
+        ids=ids, 
+        labels=labels, 
+        parents=parents, 
+        values=values, 
+        marker_colors=colors,
+        customdata=customdata, 
+        texttemplate="%{customdata[1]}", 
+        hovertemplate="%{customdata[0]}<extra></extra>", 
+        textfont=dict(color="black")
     ))
-    fig_treemap.update_layout(margin=dict(t=10, l=10, r=10, b=10), height=550, template='plotly_dark')
-    st.plotly_chart(fig_treemap, use_container_width=True)
-
-    st.subheader("📋 Resumo de Indicadores da Grade")
-    col_filtro, _ = st.columns([1, 2])
-    with col_filtro:
-        setor_selecionado = st.selectbox("Filtrar Tabela:", ["Todos os Setores"] + sorted(list(df_resumo['Setor'].unique())))
     
-    df_exibicao = df_resumo if setor_selecionado == "Todos os Setores" else df_resumo[df_resumo['Setor'] == setor_selecionado]
+    figura_treemap.update_layout(
+        margin=dict(t=10, l=10, r=10, b=10), 
+        height=550, 
+        template='plotly_dark'
+    )
+    
+    st.plotly_chart(figura_treemap, use_container_width=True)
+
+    # Tabela Resumo com Filtro
+    st.subheader("📋 Resumo de Indicadores da Grade")
+    
+    coluna_filtro, coluna_vazia = st.columns([1, 2])
+    with coluna_filtro:
+        opcoes_setores = ["Todos os Setores"] + sorted(list(df_resumo['Setor'].unique()))
+        setor_selecionado = st.selectbox("Filtrar Tabela:", opcoes_setores)
+    
+    if setor_selecionado == "Todos os Setores":
+        df_exibicao = df_resumo
+    else:
+        df_exibicao = df_resumo[df_resumo['Setor'] == setor_selecionado]
+        
     st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
 
 
 # ==============================================================================
-# --- ABA 2: ANÁLISE DETALHADA ---
+# --- ABA 2: ANÁLISE DETALHADA POR ATIVO ---
 # ==============================================================================
-with tab_analise_individual:
-    col_busca, col_tempo = st.columns([1, 1])
-    with col_busca:
-        ativo_buscado = st.text_input("🔍 Digite o código do ativo (Ex: PETR4, MGLU3):", key="search_asset").upper().strip()
+with aba_analise_individual:
+    coluna_busca, coluna_tempo = st.columns([1, 1])
+    
+    with coluna_busca:
+        ativo_buscado = st.text_input(
+            "🔍 Digite o código do ativo (Ex: PETR4, MGLU3):", 
+            key="search_asset"
+        ).upper().strip()
     
     if ativo_buscado:
+        # Tratamento para adicionar o sufixo .SA para ações brasileiras
         if not ativo_buscado.endswith('.SA') and any(char.isdigit() for char in ativo_buscado):
             ativo_buscado += '.SA'
             
-        with col_tempo:
-            janela_tempo = st.radio("Período do Gráfico:", ["1 Mês", "6 Meses", "1 Ano", "2 Anos", "5 Anos"], index=2, horizontal=True)
-            mapa_periodos = {"1 Mês": "1mo", "6 Meses": "6mo", "1 Ano": "1y", "2 Anos": "2y", "5 Anos": "5y"}
+        with coluna_tempo:
+            opcoes_tempo = ["1 Mês", "6 Meses", "1 Ano", "2 Anos", "5 Anos"]
+            janela_tempo = st.radio(
+                "Período do Gráfico:", 
+                opcoes_tempo, 
+                index=2, 
+                horizontal=True
+            )
+            
+            mapa_periodos = {
+                "1 Mês": "1mo", 
+                "6 Meses": "6mo", 
+                "1 Ano": "1y", 
+                "2 Anos": "2y", 
+                "5 Anos": "5y"
+            }
             periodo_selecionado = mapa_periodos[janela_tempo]
 
-        with st.spinner("Processando histórico de 10 anos e fundamentos..."):
-            # Passando a sessão mascarada para o Ticker também
-            ticker_obj = yf.Ticker(ativo_buscado, session=session_yf)
+        with st.spinner("Processando histórico de 10 anos e dados fundamentalistas..."):
             
-            # Baixando histórico gigante para a Rentabilidade (10 Anos)
-            df_hist = yf.download(ativo_buscado, period="10y", session=session_yf)
+            # Instanciando o Ticker sem o custom session
+            ticker_obj = yf.Ticker(ativo_buscado)
+            
+            # Baixando histórico longo para basear as métricas de rentabilidade e Médias de 200
+            df_hist = yf.download(ativo_buscado, period="10y")
             
             if df_hist.empty:
-                st.error("⚠️ Código não encontrado.")
+                st.error("⚠️ Código não encontrado no banco de dados.")
             else:
+                # Corrigindo o MultiIndex que algumas versões do YFinance retornam
                 if isinstance(df_hist.columns, pd.MultiIndex):
                     df_hist.columns = df_hist.columns.droplevel(1)
 
-                # --- CÁLCULO DAS RENTABILIDADES HISTÓRICAS ---
+                # --------------------------------------------------------------
+                # RENTABILIDADES HISTÓRICAS
+                # --------------------------------------------------------------
                 preco_atual = float(df_hist['Close'].iloc[-1])
                 
-                def calc_retorno(df, dias_uteis):
-                    if len(df) > dias_uteis:
-                        preco_antigo = float(df['Close'].iloc[-dias_uteis])
-                        return ((preco_atual / preco_antigo) - 1) * 100
+                def calcular_retorno(df_dados, dias_uteis):
+                    if len(df_dados) > dias_uteis:
+                        preco_antigo = float(df_dados['Close'].iloc[-dias_uteis])
+                        retorno = ((preco_atual / preco_antigo) - 1) * 100
+                        return retorno
                     return "-"
 
-                ret_1m = calc_retorno(df_hist, 21)
-                ret_3m = calc_retorno(df_hist, 63)
-                ret_1a = calc_retorno(df_hist, 252)
-                ret_2a = calc_retorno(df_hist, 504)
-                ret_5a = calc_retorno(df_hist, 1260)
-                ret_10a = calc_retorno(df_hist, 2520)
+                retorno_1m = calcular_retorno(df_hist, 21)
+                retorno_3m = calcular_retorno(df_hist, 63)
+                retorno_1a = calcular_retorno(df_hist, 252)
+                retorno_2a = calcular_retorno(df_hist, 504)
+                retorno_5a = calcular_retorno(df_hist, 1260)
+                retorno_10a = calcular_retorno(df_hist, 2520)
 
-                # --- BUSCA FUNDAMENTALISTA ---
+                # --------------------------------------------------------------
+                # BUSCA FUNDAMENTALISTA
+                # --------------------------------------------------------------
                 info = {}
                 try: 
                     info = ticker_obj.info
-                except: 
+                except Exception: 
                     pass
 
-                val_var12m = ret_1a if ret_1a != "-" else info.get('52WeekChange', 0) * 100
-                val_pl = info.get('trailingPE', "-")
-                val_pvp = info.get('priceToBook', "-")
+                # Variação em 12 meses
+                if retorno_1a != "-":
+                    valor_var12m = retorno_1a
+                else:
+                    valor_var12m = info.get('52WeekChange', 0) * 100
+                    
+                # Múltiplos
+                valor_pl = info.get('trailingPE', "-")
+                valor_pvp = info.get('priceToBook', "-")
                 
-                val_dy = info.get('trailingAnnualDividendYield') or info.get('dividendYield', 0)
-                if val_dy: val_dy = val_dy * 100
+                # Dividend Yield TTM (Trailing Twelve Months) - O mais confiável
+                valor_dy = info.get('trailingAnnualDividendYield')
+                
+                # Fallback caso a API falhe no TTM
+                if valor_dy is None:
+                    valor_dy = info.get('dividendYield', 0)
+                    
+                # Transformando em percentual se o dado existir
+                if valor_dy is not None and valor_dy != "-": 
+                    valor_dy = valor_dy * 100
+                else:
+                    valor_dy = "-"
 
-                # --- CARDS ESTILO STATUS INVEST ---
+                # --------------------------------------------------------------
+                # RENDERIZAÇÃO DOS CARDS (Estilo Status Invest)
+                # --------------------------------------------------------------
                 st.markdown(f"""
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
@@ -246,24 +466,26 @@ with tab_analise_individual:
                     </div>
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
                         <div style="background-color: #2b2e35; color: #d4af37; padding: 8px; font-weight: bold; font-size: 13px;">VARIAÇÃO (12M)</div>
-                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: {cor_variacao(val_var12m)};">{fmt_br(val_var12m, is_pct=True)}</div>
+                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: {cor_variacao(valor_var12m)};">{fmt_br(valor_var12m, is_pct=True)}</div>
                     </div>
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
                         <div style="background-color: #2b2e35; color: #d4af37; padding: 8px; font-weight: bold; font-size: 13px;">P/L</div>
-                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(val_pl)}</div>
+                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(valor_pl)}</div>
                     </div>
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
                         <div style="background-color: #2b2e35; color: #d4af37; padding: 8px; font-weight: bold; font-size: 13px;">P/VP</div>
-                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(val_pvp)}</div>
+                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(valor_pvp)}</div>
                     </div>
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
                         <div style="background-color: #2b2e35; color: #d4af37; padding: 8px; font-weight: bold; font-size: 13px;">DY (12M)</div>
-                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(val_dy, is_pct=True)}</div>
+                        <div style="padding: 15px; font-size: 22px; font-weight: bold; color: white;">{fmt_br(valor_dy, is_pct=True)}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # --- TABELA DE RENTABILIDADE HISTÓRICA ---
+                # --------------------------------------------------------------
+                # RENDERIZAÇÃO DA TABELA DE RENTABILIDADE HISTÓRICA
+                # --------------------------------------------------------------
                 st.markdown(f"""
                 <div style="border: 1px solid #333; border-radius: 8px; background-color: #1e1e1e; padding: 15px; margin-bottom: 15px;">
                     <div style="font-weight: bold; margin-bottom: 15px; color: white;">📈 Rentabilidade Histórica</div>
@@ -279,123 +501,442 @@ with tab_analise_individual:
                         </tr>
                         <tr style="font-size: 16px; font-weight: bold; background-color: #252525;">
                             <td style="padding: 15px; text-align: left; color: white;">Rentabilidade</td>
-                            <td style="color: {cor_variacao(ret_1m)};">{fmt_br(ret_1m, is_pct=True)}</td>
-                            <td style="color: {cor_variacao(ret_3m)};">{fmt_br(ret_3m, is_pct=True)}</td>
-                            <td style="color: {cor_variacao(ret_1a)};">{fmt_br(ret_1a, is_pct=True)}</td>
-                            <td style="color: {cor_variacao(ret_2a)};">{fmt_br(ret_2a, is_pct=True)}</td>
-                            <td style="color: {cor_variacao(ret_5a)};">{fmt_br(ret_5a, is_pct=True)}</td>
-                            <td style="color: {cor_variacao(ret_10a)};">{fmt_br(ret_10a, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_1m)};">{fmt_br(retorno_1m, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_3m)};">{fmt_br(retorno_3m, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_1a)};">{fmt_br(retorno_1a, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_2a)};">{fmt_br(retorno_2a, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_5a)};">{fmt_br(retorno_5a, is_pct=True)}</td>
+                            <td style="color: {cor_variacao(retorno_10a)};">{fmt_br(retorno_10a, is_pct=True)}</td>
                         </tr>
                     </table>
                 </div>
                 """, unsafe_allow_html=True)
 
-                # --- BOTÃO DE EXPORTAÇÃO ---
-                csv_data = df_hist.to_csv().encode('utf-8')
+                # --------------------------------------------------------------
+                # BOTÃO DE EXPORTAÇÃO
+                # --------------------------------------------------------------
+                conteudo_csv = df_hist.to_csv().encode('utf-8')
                 st.download_button(
-                    label="📥 Baixar Histórico Completo e Indicadores (.CSV)",
-                    data=csv_data,
+                    label="📥 Baixar Histórico Completo e Indicadores Técnicos (.CSV)",
+                    data=conteudo_csv,
                     file_name=f"{ativo_buscado}_historico.csv",
                     mime="text/csv"
                 )
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- CÁLCULOS TÉCNICOS ---
+                # --------------------------------------------------------------
+                # CÁLCULOS DE INDICADORES TÉCNICOS
+                # --------------------------------------------------------------
+                # Médias Móveis Simples
                 df_hist['SMA20'] = df_hist['Close'].rolling(window=20).mean()
                 df_hist['SMA50'] = df_hist['Close'].rolling(window=50).mean()
                 df_hist['SMA100'] = df_hist['Close'].rolling(window=100).mean()
                 df_hist['SMA200'] = df_hist['Close'].rolling(window=200).mean()
                 
-                sma3 = df_hist['Close'].rolling(window=3).mean()
-                sma8 = df_hist['Close'].rolling(window=8).mean()
-                sma20_didi = df_hist['Close'].rolling(window=20).mean()
-                df_hist['DidiFast'] = sma3 - sma8
-                df_hist['DidiSlow'] = sma20_didi - sma8
+                # Didi Index (Agulhada)
+                linha_rapida = df_hist['Close'].rolling(window=3).mean()
+                linha_referencia = df_hist['Close'].rolling(window=8).mean()
+                linha_lenta = df_hist['Close'].rolling(window=20).mean()
                 
-                tr = pd.concat([df_hist['High'] - df_hist['Low'], (df_hist['High'] - df_hist['Close'].shift(1)).abs(), (df_hist['Low'] - df_hist['Close'].shift(1)).abs()], axis=1).max(axis=1)
-                up_m = df_hist['High'] - df_hist['High'].shift(1)
-                dn_m = df_hist['Low'].shift(1) - df_hist['Low']
-                pos_dm = pd.Series(np.where((up_m > dn_m) & (up_m > 0), up_m, 0), index=df_hist.index)
-                neg_dm = pd.Series(np.where((dn_m > up_m) & (dn_m > 0), dn_m, 0), index=df_hist.index)
-                tr8 = tr.rolling(8).sum()
-                df_hist['PDI'] = 100 * pos_dm.rolling(8).sum() / tr8
-                df_hist['NDI'] = 100 * neg_dm.rolling(8).sum() / tr8
-                df_hist['ADX'] = (100 * (np.abs(df_hist['PDI'] - df_hist['NDI']) / (df_hist['PDI'] + df_hist['NDI']))).rolling(window=8).mean()
-
-                # --- CORTE DE DADOS PARA EXIBIÇÃO NO GRÁFICO ---
-                limite_data = datetime.now() - (timedelta(days=30) if janela_tempo == "1 Mês" else timedelta(days=180) if janela_tempo == "6 Meses" else timedelta(days=365) if janela_tempo == "1 Ano" else timedelta(days=730) if janela_tempo == "2 Anos" else timedelta(days=1825))
-                df_p = df_hist[df_hist.index >= limite_data].copy()
+                df_hist['DidiFast'] = linha_rapida - linha_referencia
+                df_hist['DidiSlow'] = linha_lenta - linha_referencia
                 
-                cores_volume = ['#228B22' if r.Close >= r.Open else '#B22222' for r in df_p.itertuples()]
-                cores_didi_bg = ['rgba(0, 150, 0, 0.12)' if p > n else 'rgba(200, 0, 0, 0.12)' for p, n in zip(df_p['PDI'], df_p['NDI'])]
+                # Directional Movement Index (DMI / ADX)
+                true_range_1 = df_hist['High'] - df_hist['Low']
+                true_range_2 = (df_hist['High'] - df_hist['Close'].shift(1)).abs()
+                true_range_3 = (df_hist['Low'] - df_hist['Close'].shift(1)).abs()
+                
+                dataframe_tr = pd.concat([true_range_1, true_range_2, true_range_3], axis=1)
+                true_range = dataframe_tr.max(axis=1)
+                
+                movimento_alto = df_hist['High'] - df_hist['High'].shift(1)
+                movimento_baixo = df_hist['Low'].shift(1) - df_hist['Low']
+                
+                direcional_positivo = pd.Series(
+                    np.where(
+                        (movimento_alto > movimento_baixo) & (movimento_alto > 0), 
+                        movimento_alto, 
+                        0
+                    ), 
+                    index=df_hist.index
+                )
+                
+                direcional_negativo = pd.Series(
+                    np.where(
+                        (movimento_baixo > movimento_alto) & (movimento_baixo > 0), 
+                        movimento_baixo, 
+                        0
+                    ), 
+                    index=df_hist.index
+                )
+                
+                tr_suavizado = true_range.rolling(8).sum()
+                
+                df_hist['PDI'] = 100 * direcional_positivo.rolling(8).sum() / tr_suavizado
+                df_hist['NDI'] = 100 * direcional_negativo.rolling(8).sum() / tr_suavizado
+                
+                diferenca_dmi = np.abs(df_hist['PDI'] - df_hist['NDI'])
+                soma_dmi = df_hist['PDI'] + df_hist['NDI']
+                
+                df_hist['ADX'] = (100 * (diferenca_dmi / soma_dmi)).rolling(window=8).mean()
 
-                # --- LAYOUT: GRÁFICOS VS NOTÍCIAS ---
-                col_graficos, col_noticias = st.columns([3, 1])
+                # --------------------------------------------------------------
+                # CORTE DE TEMPO PARA EXIBIÇÃO NOS GRÁFICOS
+                # --------------------------------------------------------------
+                if janela_tempo == "1 Mês":
+                    limite_data = datetime.now() - timedelta(days=30)
+                elif janela_tempo == "6 Meses":
+                    limite_data = datetime.now() - timedelta(days=180)
+                elif janela_tempo == "1 Ano":
+                    limite_data = datetime.now() - timedelta(days=365)
+                elif janela_tempo == "2 Anos":
+                    limite_data = datetime.now() - timedelta(days=730)
+                else:
+                    limite_data = datetime.now() - timedelta(days=1825)
+                    
+                df_plot = df_hist[df_hist.index >= limite_data].copy()
+                
+                # Definindo cores dinâmicas para o Gráfico
+                cores_volume = []
+                for row_tuple in df_plot.itertuples():
+                    if row_tuple.Close >= row_tuple.Open:
+                        cores_volume.append('#228B22')
+                    else:
+                        cores_volume.append('#B22222')
+                        
+                cores_didi_fundo = []
+                for p_val, n_val in zip(df_plot['PDI'], df_plot['NDI']):
+                    if p_val > n_val:
+                        cores_didi_fundo.append('rgba(0, 150, 0, 0.12)')
+                    else:
+                        cores_didi_fundo.append('rgba(200, 0, 0, 0.12)')
 
-                with col_graficos:
-                    fig_plotly = make_subplots(
-                        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.6, 0.20, 0.20],
-                        specs=[[{"secondary_y": True}], [{"secondary_y": False}], [{"secondary_y": False}]],
-                        subplot_titles=('Gráfico de Preço e Volume', 'Didi Plus (3, 8, 20)', 'DMI / ADX (8)')
+                # --------------------------------------------------------------
+                # DIVISÃO DA TELA: GRÁFICOS E NOTÍCIAS
+                # --------------------------------------------------------------
+                coluna_graficos, coluna_noticias = st.columns([3, 1])
+
+                with coluna_graficos:
+                    # Instanciando os Subplots
+                    figura_tecnica = make_subplots(
+                        rows=3, 
+                        cols=1, 
+                        shared_xaxes=True, 
+                        vertical_spacing=0.03, 
+                        row_heights=[0.6, 0.20, 0.20],
+                        specs=[
+                            [{"secondary_y": True}], 
+                            [{"secondary_y": False}], 
+                            [{"secondary_y": False}]
+                        ],
+                        subplot_titles=(
+                            'Gráfico de Preço e Volume', 
+                            'Didi Plus (3, 8, 20)', 
+                            'DMI / ADX (8)'
+                        )
                     )
                     
-                    fig_plotly.add_trace(go.Candlestick(x=df_p.index, open=df_p['Open'], high=df_p['High'], low=df_p['Low'], close=df_p['Close'], name='Candlestick'), row=1, col=1, secondary_y=False)
-                    for m, c in zip(['SMA50','SMA200'], ['#00BFFF', 'white']): fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p[m], name=m, line=dict(color=c, width=1.5)), row=1, col=1, secondary_y=False)
-                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=df_p['Volume'], name='Volume', marker_color=cores_volume, opacity=0.35), row=1, col=1, secondary_y=True)
+                    # Candlestick
+                    figura_tecnica.add_trace(
+                        go.Candlestick(
+                            x=df_plot.index, 
+                            open=df_plot['Open'], 
+                            high=df_plot['High'], 
+                            low=df_plot['Low'], 
+                            close=df_plot['Close'], 
+                            name='Candlestick'
+                        ), 
+                        row=1, 
+                        col=1, 
+                        secondary_y=False
+                    )
                     
-                    max_y_didi = max(df_p['DidiFast'].abs().max(), df_p['DidiSlow'].abs().max()) * 1.4
-                    if pd.isna(max_y_didi) or max_y_didi == 0: max_y_didi = 1
-                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=[max_y_didi] * len(df_p), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=[-max_y_didi] * len(df_p), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=np.zeros(len(df_p)), mode='lines', name='Didi Normal', line=dict(color='white', width=1, dash='dot')), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['DidiSlow'], name='Didi Lenta', line=dict(color='#FF00FF', width=2)), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['DidiFast'], name='Didi Rápida', line=dict(color='#00BFFF', width=2)), row=2, col=1)
+                    # Plotando as Médias Móveis
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['SMA50'], 
+                            mode='lines', 
+                            name='Média 50', 
+                            line=dict(color='#00BFFF', width=1.5)
+                        ), 
+                        row=1, 
+                        col=1, 
+                        secondary_y=False
+                    )
                     
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['ADX'], name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['PDI'], name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['NDI'], name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['SMA200'], 
+                            mode='lines', 
+                            name='Média 200', 
+                            line=dict(color='white', width=1.5)
+                        ), 
+                        row=1, 
+                        col=1, 
+                        secondary_y=False
+                    )
+                    
+                    # Volume Sobreposto
+                    figura_tecnica.add_trace(
+                        go.Bar(
+                            x=df_plot.index, 
+                            y=df_plot['Volume'], 
+                            name='Volume', 
+                            marker_color=cores_volume, 
+                            opacity=0.35
+                        ), 
+                        row=1, 
+                        col=1, 
+                        secondary_y=True
+                    )
+                    
+                    # Gráfico Didi Index
+                    maximo_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
+                    if pd.isna(maximo_y_didi) or maximo_y_didi == 0: 
+                        maximo_y_didi = 1
+                        
+                    figura_tecnica.add_trace(
+                        go.Bar(
+                            x=df_plot.index, 
+                            y=[maximo_y_didi] * len(df_plot), 
+                            marker_color=cores_didi_fundo, 
+                            marker_line_width=0, 
+                            showlegend=False, 
+                            hoverinfo='skip'
+                        ), 
+                        row=2, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Bar(
+                            x=df_plot.index, 
+                            y=[-maximo_y_didi] * len(df_plot), 
+                            marker_color=cores_didi_fundo, 
+                            marker_line_width=0, 
+                            showlegend=False, 
+                            hoverinfo='skip'
+                        ), 
+                        row=2, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=np.zeros(len(df_plot)), 
+                            mode='lines', 
+                            name='Eixo Zero (Didi)', 
+                            line=dict(color='white', width=1, dash='dot')
+                        ), 
+                        row=2, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['DidiSlow'], 
+                            mode='lines', 
+                            name='Linha Lenta', 
+                            line=dict(color='#FF00FF', width=2)
+                        ), 
+                        row=2, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['DidiFast'], 
+                            mode='lines', 
+                            name='Linha Rápida', 
+                            line=dict(color='#00BFFF', width=2)
+                        ), 
+                        row=2, 
+                        col=1
+                    )
+                    
+                    # Gráfico ADX e DMI
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['ADX'], 
+                            mode='lines', 
+                            name='Força (ADX)', 
+                            line=dict(color='white', width=1.5)
+                        ), 
+                        row=3, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['PDI'], 
+                            mode='lines', 
+                            name='Compradores (+DI)', 
+                            line=dict(color='#00BFFF', width=1.5)
+                        ), 
+                        row=3, 
+                        col=1
+                    )
+                    
+                    figura_tecnica.add_trace(
+                        go.Scatter(
+                            x=df_plot.index, 
+                            y=df_plot['NDI'], 
+                            mode='lines', 
+                            name='Vendedores (-DI)', 
+                            line=dict(color='#FFD700', width=1.5)
+                        ), 
+                        row=3, 
+                        col=1
+                    )
 
-                    fig_plotly.update_yaxes(title_text="Preço", side="right", row=1, col=1, secondary_y=False)
-                    fig_plotly.update_yaxes(showgrid=False, showticklabels=False, range=[0, df_p['Volume'].max() * 4], row=1, col=1, secondary_y=True)
-                    fig_plotly.update_layout(template='plotly_dark', height=900, showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), barmode='relative', xaxis_rangeslider_visible=False)
-                    st.plotly_chart(fig_plotly, use_container_width=True)
-
-                    # --- BENCHMARK FIXO ---
-                    st.markdown("### 📊 Comparativo de Benchmarks")
-                    fig_bench = go.Figure()
-                    ativo_norm = (df_p['Close'] / float(df_p['Close'].iloc[0]) - 1) * 100
-                    fig_bench.add_trace(go.Scatter(x=ativo_norm.index, y=ativo_norm, name=ativo_buscado, line=dict(color='#00BFFF', width=2.5)))
+                    # Ajustes Visuais do Gráfico
+                    figura_tecnica.update_yaxes(
+                        title_text="Preço (R$)", 
+                        side="right", 
+                        row=1, 
+                        col=1, 
+                        secondary_y=False
+                    )
                     
-                    mapa = {'IBOV': '^BVSP', 'IFIX': 'XFIX11.SA', 'SMLL': 'SMAL11.SA', 'IDIV': 'DIVO11.SA', 'IVVB11': 'IVVB11.SA'}
-                    for b, t in mapa.items():
-                        # Adiciona session_yf para burlar bloqueio também nos benchmarks
-                        df_b = yf.download(t, start=limite_data, session=session_yf, progress=False)
-                        if not df_b.empty:
-                            df_b = df_b[~df_b.index.duplicated(keep='first')]
-                            b_norm = (df_b['Close'] / float(df_b['Close'].iloc[0]) - 1) * 100
-                            fig_bench.add_trace(go.Scatter(x=b_norm.index, y=b_norm, name=b, line=dict(width=1.5, dash='dot')))
+                    figura_tecnica.update_yaxes(
+                        showgrid=False, 
+                        showticklabels=False, 
+                        range=[0, df_plot['Volume'].max() * 4], 
+                        row=1, 
+                        col=1, 
+                        secondary_y=True
+                    )
                     
-                    fig_bench.update_layout(template='plotly_dark', height=400, yaxis_title="Performance (%)")
-                    st.plotly_chart(fig_bench, use_container_width=True)
+                    figura_tecnica.update_layout(
+                        template='plotly_dark', 
+                        height=900, 
+                        showlegend=True, 
+                        legend=dict(
+                            orientation="h", 
+                            yanchor="bottom", 
+                            y=1.02, 
+                            xanchor="right", 
+                            x=1
+                        ), 
+                        barmode='relative', 
+                        xaxis_rangeslider_visible=False
+                    )
+                    
+                    st.plotly_chart(figura_tecnica, use_container_width=True)
 
-                with col_noticias:
-                    st.markdown("### 📰 Notícias")
-                    for n in buscar_noticias_google(ativo_buscado): 
-                        st.markdown(f"""
-                        <div style="border: 1px solid #444444; border-radius: 5px; padding: 10px; margin-bottom: 12px; background-color: #1e1e1e;">
-                            <a href="{n['link']}" target="_blank" style="color: #00BFFF; text-decoration: none; font-weight: bold; font-size: 14px;">{n['title']}</a>
-                            <p style="color: #888888; font-size: 11px; margin: 5px 0 0 0;">{n['publisher']} • {n['time']}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    # ----------------------------------------------------------
+                    # GRÁFICO DE BENCHMARKS FIXOS
+                    # ----------------------------------------------------------
+                    st.markdown("### 📊 Comparativo Contra Benchmarks Nacionais")
+                    
+                    figura_benchmarks = go.Figure()
+                    
+                    # Normalizando o ativo principal para percentual
+                    primeiro_preco_ativo = float(df_plot['Close'].iloc[0])
+                    ativo_normalizado = (df_plot['Close'] / primeiro_preco_ativo - 1) * 100
+                    
+                    figura_benchmarks.add_trace(
+                        go.Scatter(
+                            x=ativo_normalizado.index, 
+                            y=ativo_normalizado, 
+                            name=ativo_buscado, 
+                            line=dict(color='#00BFFF', width=2.5)
+                        )
+                    )
+                    
+                    # Dicionário fixo de Benchmarks e seus respectivos Tickers (ETFs e Índices)
+                    mapa_indicadores = {
+                        'IBOV (Mercado Geral)': '^BVSP', 
+                        'IFIX (Fundos Imobiliários)': 'XFIX11.SA', 
+                        'SMLL (Small Caps)': 'SMAL11.SA', 
+                        'IDIV (Pagadoras de Dividendos)': 'DIVO11.SA', 
+                        'IVVB11 (S&P 500)': 'IVVB11.SA'
+                    }
+                    
+                    for nome_indicador, ticker_indicador in mapa_indicadores.items():
+                        # O yfinance busca os benchmarks
+                        df_benchmark = yf.download(ticker_indicador, start=limite_data, progress=False)
+                        
+                        if not df_benchmark.empty:
+                            # Prevenindo datas duplicadas
+                            df_benchmark = df_benchmark[~df_benchmark.index.duplicated(keep='first')]
+                            
+                            primeiro_preco_benchmark = float(df_benchmark['Close'].iloc[0])
+                            benchmark_normalizado = (df_benchmark['Close'] / primeiro_preco_benchmark - 1) * 100
+                            
+                            figura_benchmarks.add_trace(
+                                go.Scatter(
+                                    x=benchmark_normalizado.index, 
+                                    y=benchmark_normalizado, 
+                                    name=nome_indicador, 
+                                    line=dict(width=1.5, dash='dot')
+                                )
+                            )
+                            
+                    figura_benchmarks.update_layout(
+                        template='plotly_dark', 
+                        height=400, 
+                        yaxis_title="Desempenho Acumulado (%)",
+                        legend=dict(
+                            orientation="h", 
+                            yanchor="bottom", 
+                            y=1.02, 
+                            xanchor="right", 
+                            x=1
+                        )
+                    )
+                    
+                    st.plotly_chart(figura_benchmarks, use_container_width=True)
+
+                with coluna_noticias:
+                    st.markdown("### 📰 Notícias Corporativas")
+                    lista_noticias = buscar_noticias_google(ativo_buscado)
+                    
+                    if not lista_noticias:
+                        st.info("Não há comunicados recentes registrados para este ativo no feed do Google Notícias.")
+                    else:
+                        for noticia in lista_noticias:
+                            titulo_noticia = noticia['title']
+                            link_noticia = noticia['link']
+                            fonte_noticia = noticia['publisher']
+                            data_noticia = noticia['time']
+                            
+                            st.markdown(f"""
+                            <div style="border: 1px solid #444444; border-radius: 5px; padding: 10px; margin-bottom: 12px; background-color: #1e1e1e;">
+                                <a href="{link_noticia}" target="_blank" style="color: #00BFFF; text-decoration: none; font-weight: bold; font-size: 14px;">{titulo_noticia}</a>
+                                <p style="color: #888888; font-size: 11px; margin: 5px 0 0 0;">{fonte_noticia} • {data_noticia}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
                 
-                # --- EVENTOS ---
-                c_ev1, c_ev2 = st.columns(2)
+                # --------------------------------------------------------------
+                # EVENTOS CORPORATIVOS
+                # --------------------------------------------------------------
+                st.divider()
+                st.markdown("### 📅 Agenda de Eventos")
                 
-                balanco_ts = info.get('earningsTimestamp', info.get('earningsTimestampStart', 0))
-                data_bal = datetime.fromtimestamp(balanco_ts).strftime('%d/%m/%Y') if balanco_ts else 'Indisponível'
+                coluna_evento_1, coluna_evento_2 = st.columns(2)
                 
-                div_ts = info.get('exDividendDate', 0)
-                data_div = datetime.fromtimestamp(div_ts).strftime('%d/%m/%Y') if div_ts else 'Indisponível'
+                balanco_timestamp = info.get('earningsTimestamp')
+                if balanco_timestamp is None:
+                    balanco_timestamp = info.get('earningsTimestampStart', 0)
+                    
+                if balanco_timestamp:
+                    data_balanco = datetime.fromtimestamp(balanco_timestamp).strftime('%d/%m/%Y')
+                else:
+                    data_balanco = 'Sem previsão oficial'
+                    
+                dividendo_timestamp = info.get('exDividendDate', 0)
+                if dividendo_timestamp:
+                    data_dividendo = datetime.fromtimestamp(dividendo_timestamp).strftime('%d/%m/%Y')
+                else:
+                    data_dividendo = 'Indisponível na base'
                 
-                c_ev1.info(f"🧾 **Próximo Balanço:** {data_bal}")
-                c_ev2.success(f"💰 **Data Com (Dividendos):** {data_div}")
+                coluna_evento_1.info(f"🧾 **Próxima Divulgação de Resultados (Balanço):** {data_balanco}")
+                coluna_evento_2.success(f"💰 **Data Com (Direito a Proventos):** {data_dividendo}")
