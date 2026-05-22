@@ -531,10 +531,10 @@ with tab_analise_individual:
                     return fast, slow, sma3, sma8, sma20
             
                 def detectar_agulhada(fast, slow):
-                """
-                Agulhada REAL: as duas linhas cruzam o zero juntas
-                Tolerância de até 2 candles entre os cruzamentos
-                """
+                    """
+                    Agulhada REAL: as duas linhas cruzam o zero juntas
+                    Tolerância de até 2 candles entre os cruzamentos
+                    """
                 sinais = []
                 for i in range(2, len(fast)):
                     f_ant, f_at = fast.iloc[i-1], fast.iloc[i]
