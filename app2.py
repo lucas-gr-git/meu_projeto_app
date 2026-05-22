@@ -698,6 +698,97 @@ with tab_agulhadas:
                 fig_ag.update_xaxes(rangeslider_visible=False)
                 st.plotly_chart(fig_ag, use_container_width=True)
 
+                # --- BOLLINGER BANDS ---
+                st.markdown("#### 📐 Bandas de Bollinger (20, 2) — Padrão Didi Aguiar")
+                
+                sma20_bb = df_ag_hist['Close'].rolling(20).mean()
+                std20_bb = df_ag_hist['Close'].rolling(20).std()
+                bb_upper = sma20_bb + 2 * std20_bb
+                bb_lower = sma20_bb - 2 * std20_bb
+                bb_width  = ((bb_upper - bb_lower) / sma20_bb) * 100  # largura relativa
+                
+                fig_bb = make_subplots(
+                    rows=2, cols=1, shared_xaxes=True,
+                    vertical_spacing=0.04, row_heights=[0.75, 0.25],
+                    subplot_titles=(f'Bandas de Bollinger — {ativo_ag}', 'Largura das Bandas (%)')
+                )
+                
+                # Área entre as bandas
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=bb_upper,
+                    mode='lines', name='Banda Superior',
+                    line=dict(color='rgba(255,165,0,0.8)', width=1.5)
+                ), row=1, col=1)
+                
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=bb_lower,
+                    mode='lines', name='Banda Inferior',
+                    line=dict(color='rgba(255,165,0,0.8)', width=1.5),
+                    fill='tonexty',
+                    fillcolor='rgba(255,165,0,0.06)'
+                ), row=1, col=1)
+                
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=sma20_bb,
+                    mode='lines', name='SMA20 (Base)',
+                    line=dict(color='#FFD700', width=1.5, dash='dot')
+                ), row=1, col=1)
+                
+                # Candlestick dentro do BB
+                fig_bb.add_trace(go.Candlestick(
+                    x=df_ag_hist.index,
+                    open=df_ag_hist['Open'], high=df_ag_hist['High'],
+                    low=df_ag_hist['Low'],   close=df_ag_hist['Close'],
+                    name='Preço',
+                    increasing_line_color='#228B22',
+                    decreasing_line_color='#B22222'
+                ), row=1, col=1)
+                
+                # Marca toques na banda superior (possível sobrecompra)
+                toque_superior = df_ag_hist['High'] >= bb_upper
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index[toque_superior],
+                    y=bb_upper[toque_superior],
+                    mode='markers', name='Toque Superior',
+                    marker=dict(symbol='circle', size=7, color='#FF4500',
+                                line=dict(color='white', width=1))
+                ), row=1, col=1)
+                
+                # Marca toques na banda inferior (possível sobrevenda)
+                toque_inferior = df_ag_hist['Low'] <= bb_lower
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index[toque_inferior],
+                    y=bb_lower[toque_inferior],
+                    mode='markers', name='Toque Inferior',
+                    marker=dict(symbol='circle', size=7, color='#00FF7F',
+                                line=dict(color='white', width=1))
+                ), row=1, col=1)
+                
+                # Largura das bandas (squeeze indicator)
+                fig_bb.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=bb_width,
+                    mode='lines', name='Largura (%)',
+                    line=dict(color='#87CEFA', width=1.5),
+                    fill='tozeroy', fillcolor='rgba(135,206,250,0.08)'
+                ), row=2, col=1)
+                
+                fig_bb.update_yaxes(title_text="Preço (R$)", side="right", row=1, col=1)
+                fig_bb.update_yaxes(title_text="Largura (%)", side="right", row=2, col=1)
+                fig_bb.update_layout(
+                    template='plotly_dark', height=650,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                fig_bb.update_xaxes(rangeslider_visible=False)
+                st.plotly_chart(fig_bb, use_container_width=True)
+                
+                # Legenda dos toques
+                col_leg1, col_leg2 = st.columns(2)
+                with col_leg1:
+                    st.markdown("🔴 **Toque na Banda Superior** — preço encostou na resistência dinâmica, possível exaustão de alta.")
+                with col_leg2:
+                    st.markdown("🟢 **Toque na Banda Inferior** — preço encostou no suporte dinâmico, possível exaustão de baixa.")
+                st.caption("📌 Largura das bandas: quando muito estreita (squeeze), indica acumulação de energia para um movimento forte — costuma antecipar a agulhada.")
+
     # --- LEGENDA DO MÉTODO ---
     with st.expander("📖 Como funciona o método Didi Aguiar?"):
         st.markdown("""
