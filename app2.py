@@ -25,19 +25,80 @@ st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notí
 # --- LISTA DAS TOP 70 AÇÕES SEPARADAS POR SETOR ---
 # ==============================================================================
 ativos_setores = {
-    'ITUB4.SA': 'Financeiro', 'BBDC4.SA': 'Financeiro', 'BBAS3.SA': 'Financeiro', 'SANB11.SA': 'Financeiro', 'BPAC11.SA': 'Financeiro', 'B3SA3.SA': 'Financeiro', 'BBSE3.SA': 'Financeiro', 'CXSE3.SA': 'Financeiro', 'IRBR3.SA': 'Financeiro', 'PSSA3.SA': 'Financeiro',
-    'PETR4.SA': 'Petróleo e Gás', 'PETR3.SA': 'Petróleo e Gás', 'PRIO3.SA': 'Petróleo e Gás', 'RECV3.SA': 'Petróleo e Gás', 'ENAT3.SA': 'Petróleo e Gás', 'RRRP3.SA': 'Petróleo e Gás', 'UGPA3.SA': 'Petróleo e Gás', 'VBBR3.SA': 'Petróleo e Gás', 'CSAN3.SA': 'Petróleo e Gás',
-    'VALE3.SA': 'Mineração', 'GGBR4.SA': 'Mineração', 'GOAU4.SA': 'Mineração', 'CSNA3.SA': 'Mineração', 'USIM5.SA': 'Mineração', 'CMIN3.SA': 'Mineração', 'BRAP4.SA': 'Mineração',
-    'ELET3.SA': 'Energia', 'ELET6.SA': 'Energia', 'EQTL3.SA': 'Energia', 'CMIG4.SA': 'Energia', 'CPLE6.SA': 'Energia', 'ENGI11.SA': 'Energia', 'TAEE11.SA': 'Energia', 'TRPL4.SA': 'Energia', 'EGIE3.SA': 'Energia',
-    'WEGE3.SA': 'Indústria', 'EMBR3.SA': 'Indústria',
-    'LREN3.SA': 'Varejo', 'MGLU3.SA': 'Varejo', 'ARZZ3.SA': 'Varejo', 'ALOS3.SA': 'Varejo', 'RENT3.SA': 'Varejo', 'NTCO3.SA': 'Varejo', 'ASAI3.SA': 'Varejo', 'CRFB3.SA': 'Varejo', 'PCAR3.SA': 'Varejo', 'VIVA3.SA': 'Varejo',
-    'HAPV3.SA': 'Saúde', 'RDOR3.SA': 'Saúde', 'RADL3.SA': 'Saúde', 'FLRY3.SA': 'Saúde', 'MATD3.SA': 'Saúde',
-    'ABEV3.SA': 'Alimentos e Bebidas', 'JBSS3.SA': 'Alimentos e Bebidas', 'MRFG3.SA': 'Alimentos e Bebidas', 'BEEF3.SA': 'Alimentos e Bebidas', 'BRFS3.SA': 'Alimentos e Bebidas', 'SMTO3.SA': 'Alimentos e Bebidas',
-    'RAIL3.SA': 'Logística', 'CCRO3.SA': 'Logística', 'AZUL4.SA': 'Logística', 'GOLL4.SA': 'Logística',
-    'VIVT3.SA': 'Telecom e TI', 'TIMS3.SA': 'Telecom e TI', 'TOTVS3.SA': 'Telecom e TI',
-    'SBSP3.SA': 'Saneamento', 'CSMG3.SA': 'Saneamento', 'SAPR11.SA': 'Saneamento',
-    'SUZB3.SA': 'Papel e Celulose', 'KLBN11.SA': 'Papel e Celulose',
-    'CYRE3.SA': 'Construção', 'MRVE3.SA': 'Construção', 'EZTC3.SA': 'Construção', 'TEND3.SA': 'Construção'
+    'ITUB4.SA': 'Financeiro', 
+    'BBDC4.SA': 'Financeiro', 
+    'BBAS3.SA': 'Financeiro', 
+    'SANB11.SA': 'Financeiro', 
+    'BPAC11.SA': 'Financeiro', 
+    'B3SA3.SA': 'Financeiro', 
+    'BBSE3.SA': 'Financeiro', 
+    'CXSE3.SA': 'Financeiro', 
+    'IRBR3.SA': 'Financeiro', 
+    'PSSA3.SA': 'Financeiro',
+    'PETR4.SA': 'Petróleo e Gás', 
+    'PETR3.SA': 'Petróleo e Gás', 
+    'PRIO3.SA': 'Petróleo e Gás', 
+    'RECV3.SA': 'Petróleo e Gás', 
+    'ENAT3.SA': 'Petróleo e Gás', 
+    'RRRP3.SA': 'Petróleo e Gás', 
+    'UGPA3.SA': 'Petróleo e Gás', 
+    'VBBR3.SA': 'Petróleo e Gás', 
+    'CSAN3.SA': 'Petróleo e Gás',
+    'VALE3.SA': 'Mineração', 
+    'GGBR4.SA': 'Mineração', 
+    'GOAU4.SA': 'Mineração', 
+    'CSNA3.SA': 'Mineração', 
+    'USIM5.SA': 'Mineração', 
+    'CMIN3.SA': 'Mineração', 
+    'BRAP4.SA': 'Mineração',
+    'ELET3.SA': 'Energia', 
+    'ELET6.SA': 'Energia', 
+    'EQTL3.SA': 'Energia', 
+    'CMIG4.SA': 'Energia', 
+    'CPLE6.SA': 'Energia', 
+    'ENGI11.SA': 'Energia', 
+    'TAEE11.SA': 'Energia', 
+    'TRPL4.SA': 'Energia', 
+    'EGIE3.SA': 'Energia',
+    'WEGE3.SA': 'Indústria', 
+    'EMBR3.SA': 'Indústria',
+    'LREN3.SA': 'Varejo', 
+    'MGLU3.SA': 'Varejo', 
+    'ARZZ3.SA': 'Varejo', 
+    'ALOS3.SA': 'Varejo', 
+    'RENT3.SA': 'Varejo', 
+    'NTCO3.SA': 'Varejo', 
+    'ASAI3.SA': 'Varejo', 
+    'CRFB3.SA': 'Varejo', 
+    'PCAR3.SA': 'Varejo', 
+    'VIVA3.SA': 'Varejo',
+    'HAPV3.SA': 'Saúde', 
+    'RDOR3.SA': 'Saúde', 
+    'RADL3.SA': 'Saúde', 
+    'FLRY3.SA': 'Saúde', 
+    'MATD3.SA': 'Saúde',
+    'ABEV3.SA': 'Alimentos e Bebidas', 
+    'JBSS3.SA': 'Alimentos e Bebidas', 
+    'MRFG3.SA': 'Alimentos e Bebidas', 
+    'BEEF3.SA': 'Alimentos e Bebidas', 
+    'BRFS3.SA': 'Alimentos e Bebidas', 
+    'SMTO3.SA': 'Alimentos e Bebidas',
+    'RAIL3.SA': 'Logística', 
+    'CCRO3.SA': 'Logística', 
+    'AZUL4.SA': 'Logística', 
+    'GOLL4.SA': 'Logística',
+    'VIVT3.SA': 'Telecom e TI', 
+    'TIMS3.SA': 'Telecom e TI', 
+    'TOTVS3.SA': 'Telecom e TI',
+    'SBSP3.SA': 'Saneamento', 
+    'CSMG3.SA': 'Saneamento', 
+    'SAPR11.SA': 'Saneamento',
+    'SUZB3.SA': 'Papel e Celulose', 
+    'KLBN11.SA': 'Papel e Celulose',
+    'CYRE3.SA': 'Construção', 
+    'MRVE3.SA': 'Construção', 
+    'EZTC3.SA': 'Construção', 
+    'TEND3.SA': 'Construção'
 }
 ativos_lista = list(ativos_setores.keys())
 
@@ -48,6 +109,8 @@ ativos_lista = list(ativos_setores.keys())
 def carregar_dados_geral(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
+    
+    # Download em lote para o painel geral (progresso desativado para logs limpos)
     dados = yf.download(ativos, start=inicio, end=hoje, progress=False)
     return dados['Close']
 
@@ -68,7 +131,7 @@ def buscar_noticias_google(ativo):
         for item in root.findall('.//item')[:6]:
             titulo = item.find('title').text
             
-            # Filtro robusto para evitar exibir componentes vazios
+            # Validação estrita para não exibir caixas de notícias "Sem título"
             if titulo is not None and titulo != "None" and "Sem título" not in titulo and len(titulo) > 5:
                 link = item.find('link').text
                 
@@ -94,7 +157,7 @@ def buscar_noticias_google(ativo):
                 })
                 
         return noticias
-    except Exception as e:
+    except Exception:
         return []
 
 def fmt_br(val, is_pct=False, currency=False):
@@ -116,11 +179,22 @@ def fmt_br(val, is_pct=False, currency=False):
         return "-"
 
 def cor_variacao(val):
-    if pd.isna(val) or val == "-": return "#2b2e35"
-    return "#228B22" if val > 0 else "#B22222" if val < 0 else "#2b2e35"
+    if pd.isna(val) or val == "-": 
+        return "#FFFFFF"
+        
+    try:
+        val_float = float(val)
+        if val_float > 0: 
+            return "#228B22"
+        elif val_float < 0: 
+            return "#B22222"
+        else: 
+            return "#FFFFFF"
+    except:
+        return "#FFFFFF"
 
 # ==============================================================================
-# --- PROCESSAMENTO GERAL ---
+# --- PROCESSAMENTO DO PAINEL GERAL ---
 # ==============================================================================
 precos_fechamento = carregar_dados_geral(ativos_lista, 365)
 resultados = []
@@ -131,16 +205,19 @@ for ativo in ativos_lista:
     if ativo in precos_fechamento.columns:
         df['Close'] = precos_fechamento[ativo]
         
+        # Criação das Médias Móveis
         df['SMA20'] = df['Close'].rolling(window=20).mean()
         df['SMA50'] = df['Close'].rolling(window=50).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
         
+        # Limpeza e captura do último preço válido
         serie_limpa = df['Close'].dropna()
         if not serie_limpa.empty:
             ultimo_preco = float(serie_limpa.iloc[-1])
         else:
             ultimo_preco = 0
             
+        # Captura das últimas médias válidas
         serie_sma50 = df['SMA50'].dropna()
         if not serie_sma50.empty:
             sma50 = float(serie_sma50.iloc[-1])
@@ -153,11 +230,13 @@ for ativo in ativos_lista:
         else:
             sma200 = 0
             
+        # Cálculo da Variação Diária (%)
         if len(serie_limpa) > 1:
             variacao_diaria = float(serie_limpa.pct_change().iloc[-1] * 100)
         else:
             variacao_diaria = 0.0
             
+        # Avaliação de Tendência (Cruzamento de Preço vs Média)
         tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         tendencia_media = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         
@@ -166,6 +245,7 @@ for ativo in ativos_lista:
         else:
             tendencia_longa = 'N/A'
         
+        # Adiciona ao dicionário de resultados
         resultados.append({
             'Ativo': ativo.replace('.SA', ''), 
             'Setor': ativos_setores[ativo], 
@@ -176,10 +256,11 @@ for ativo in ativos_lista:
             'Tendência (200D)': tendencia_longa
         })
 
+# Converte resultados para DataFrame final
 df_resumo = pd.DataFrame(resultados)
 
 # ==============================================================================
-# --- CRIAÇÃO DAS ABAS ---
+# --- CRIAÇÃO DAS ABAS (TABS) ---
 # ==============================================================================
 aba_visao_geral, aba_analise_individual = st.tabs([
     "🌐 Visão Geral do Mercado", 
@@ -187,11 +268,12 @@ aba_visao_geral, aba_analise_individual = st.tabs([
 ])
 
 # ==============================================================================
-# --- ABA 1: VISÃO GERAL DO MERCADO ---
+# --- ABA 1: VISÃO GERAL DO MERCADO (TREEMAP E TABELA) ---
 # ==============================================================================
 with aba_visao_geral:
     st.markdown("### 📊 Mapa de Calor do Mercado")
     
+    # Estrutura inicial do Plotly Treemap
     ids = ["B3"]
     labels = ["B3"]
     parents = [""]
@@ -199,6 +281,7 @@ with aba_visao_geral:
     colors = ["#FFFFFF"]
     customdata = [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
     
+    # Construção dos nós de Setor
     for setor in df_resumo['Setor'].unique():
         ids.append(setor)
         labels.append(setor)
@@ -207,6 +290,7 @@ with aba_visao_geral:
         colors.append("#FFFFFF")
         customdata.append([f"<b>Setor: {setor}</b>", f"<b>{setor}</b>"])
         
+        # Nó fantasma para forçar a cor de fundo do cabeçalho do setor
         ids.append(setor + "_fantasma")
         labels.append("")
         parents.append(setor)
@@ -214,6 +298,7 @@ with aba_visao_geral:
         colors.append("#FFFFFF")
         customdata.append(["", ""])
 
+    # Construção dos nós de Ações (Folhas)
     for index, row in df_resumo.iterrows():
         ids.append(row['Ativo'])
         labels.append(row['Ativo'])
@@ -223,20 +308,23 @@ with aba_visao_geral:
         var = row['Variação (%)']
         preco = row['Preço (R$)']
         
+        # Aplicação de cores com base na variação
         if var > 0.05:
-            colors.append("#228B22")
+            colors.append("#228B22") # Verde
         elif var < -0.05:
-            colors.append("#B22222")
+            colors.append("#B22222") # Vermelho
         else:
-            colors.append("#708090")
+            colors.append("#708090") # Cinza
             
         preco_br = fmt_br(preco)
         var_br = f"{var:+.2f}%".replace(".", ",")
         
+        # Formatação do texto interno e do texto ao passar o rato (Hover)
         hover_text = f"<b>{row['Ativo']}</b><br>Var: {var_br}<br>Preço: R$ {preco_br}"
         block_text = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
         customdata.append([hover_text, block_text])
 
+    # Geração do Gráfico Treemap
     figura_treemap = go.Figure(go.Treemap(
         ids=ids, 
         labels=labels, 
@@ -245,8 +333,9 @@ with aba_visao_geral:
         marker_colors=colors,
         customdata=customdata, 
         texttemplate="%{customdata[1]}", 
+        textposition="top left", # Alinhamento fiel à imagem enviada
         hovertemplate="%{customdata[0]}<extra></extra>", 
-        textfont=dict(color="black")
+        textfont=dict(color="black", size=14) # Letra a negro fiel à imagem enviada
     ))
     
     figura_treemap.update_layout(
@@ -257,6 +346,7 @@ with aba_visao_geral:
     
     st.plotly_chart(figura_treemap, use_container_width=True)
 
+    # Tabela Resumo com Filtro de Setor
     st.subheader("📋 Resumo de Indicadores da Grade")
     
     coluna_filtro, coluna_vazia = st.columns([1, 2])
@@ -285,6 +375,7 @@ with aba_analise_individual:
         ).upper().strip()
     
     if ativo_buscado:
+        # Tratamento automático para sufixo de ações brasileiras
         if not ativo_buscado.endswith('.SA') and any(char.isdigit() for char in ativo_buscado):
             ativo_buscado += '.SA'
             
@@ -310,17 +401,18 @@ with aba_analise_individual:
             
             ticker_obj = yf.Ticker(ativo_buscado)
             
+            # Histórico completo baixado de uma vez para cálculos robustos
             df_hist = yf.download(ativo_buscado, period="10y", progress=False)
             
             if df_hist is None or df_hist.empty:
                 st.error("⚠️ Código não encontrado ou sem dados no momento.")
             else:
-                # Segurança: Limpeza do MultiIndex caso exista
+                # Remoção de MultiIndex que quebra cálculos (depende da versão do pandas/yfinance)
                 if isinstance(df_hist.columns, pd.MultiIndex):
                     df_hist.columns = [col[0] for col in df_hist.columns]
 
                 # --------------------------------------------------------------
-                # RENTABILIDADES HISTÓRICAS
+                # CÁLCULO DE RENTABILIDADES HISTÓRICAS
                 # --------------------------------------------------------------
                 serie_hist_limpa = df_hist['Close'].dropna()
                 
@@ -346,7 +438,7 @@ with aba_analise_individual:
                     retorno_1m = retorno_3m = retorno_1a = retorno_2a = retorno_5a = retorno_10a = "-"
 
                 # --------------------------------------------------------------
-                # BUSCA FUNDAMENTALISTA (Proteção para Cloud)
+                # DADOS FUNDAMENTALISTAS (Com tolerância a falhas na Cloud)
                 # --------------------------------------------------------------
                 info = {}
                 try: 
@@ -354,14 +446,17 @@ with aba_analise_individual:
                 except Exception: 
                     pass
 
+                # Variação Anual
                 if retorno_1a != "-":
                     valor_var12m = retorno_1a
                 else:
                     valor_var12m = info.get('52WeekChange', 0) * 100
                     
+                # Múltiplos
                 valor_pl = info.get('trailingPE', "-")
                 valor_pvp = info.get('priceToBook', "-")
                 
+                # Dividend Yield
                 valor_dy = info.get('trailingAnnualDividendYield')
                 
                 if valor_dy is None:
@@ -373,7 +468,7 @@ with aba_analise_individual:
                     valor_dy = "-"
 
                 # --------------------------------------------------------------
-                # RENDERIZAÇÃO DOS CARDS
+                # BLOCO HTML: CARDS ESTILO STATUS INVEST
                 # --------------------------------------------------------------
                 st.markdown(f"""
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -401,7 +496,7 @@ with aba_analise_individual:
                 """, unsafe_allow_html=True)
 
                 # --------------------------------------------------------------
-                # RENDERIZAÇÃO DA TABELA DE RENTABILIDADE HISTÓRICA
+                # BLOCO HTML: TABELA DE RENTABILIDADE HISTÓRICA
                 # --------------------------------------------------------------
                 st.markdown(f"""
                 <div style="border: 1px solid #333; border-radius: 8px; background-color: #1e1e1e; padding: 15px; margin-bottom: 15px;">
@@ -430,7 +525,7 @@ with aba_analise_individual:
                 """, unsafe_allow_html=True)
 
                 # --------------------------------------------------------------
-                # BOTÃO DE EXPORTAÇÃO
+                # EXPORTAÇÃO CSV
                 # --------------------------------------------------------------
                 conteudo_csv = df_hist.to_csv().encode('utf-8')
                 st.download_button(
@@ -442,13 +537,14 @@ with aba_analise_individual:
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # --------------------------------------------------------------
-                # CÁLCULOS DE INDICADORES TÉCNICOS
+                # PROCESSAMENTO TÉCNICO (MÉDIAS, DIDI E DMI)
                 # --------------------------------------------------------------
                 df_hist['SMA20'] = df_hist['Close'].rolling(window=20).mean()
                 df_hist['SMA50'] = df_hist['Close'].rolling(window=50).mean()
                 df_hist['SMA100'] = df_hist['Close'].rolling(window=100).mean()
                 df_hist['SMA200'] = df_hist['Close'].rolling(window=200).mean()
                 
+                # Didi Index
                 linha_rapida = df_hist['Close'].rolling(window=3).mean()
                 linha_referencia = df_hist['Close'].rolling(window=8).mean()
                 linha_lenta = df_hist['Close'].rolling(window=20).mean()
@@ -456,6 +552,7 @@ with aba_analise_individual:
                 df_hist['DidiFast'] = linha_rapida - linha_referencia
                 df_hist['DidiSlow'] = linha_lenta - linha_referencia
                 
+                # ADX e DMI
                 true_range_1 = df_hist['High'] - df_hist['Low']
                 true_range_2 = (df_hist['High'] - df_hist['Close'].shift(1)).abs()
                 true_range_3 = (df_hist['Low'] - df_hist['Close'].shift(1)).abs()
@@ -495,7 +592,7 @@ with aba_analise_individual:
                 df_hist['ADX'] = (100 * (diferenca_dmi / soma_dmi)).rolling(window=8).mean()
 
                 # --------------------------------------------------------------
-                # CORTE DE TEMPO PARA EXIBIÇÃO NOS GRÁFICOS
+                # CORTE DE TEMPO PARA OS GRÁFICOS
                 # --------------------------------------------------------------
                 if janela_tempo == "1 Mês":
                     limite_data = datetime.now() - timedelta(days=30)
@@ -510,6 +607,7 @@ with aba_analise_individual:
                     
                 df_plot = df_hist[df_hist.index >= limite_data].copy()
                 
+                # Cores Dinâmicas Volume e Didi
                 cores_volume = []
                 for row_tuple in df_plot.itertuples():
                     if row_tuple.Close >= row_tuple.Open:
@@ -525,11 +623,12 @@ with aba_analise_individual:
                         cores_didi_fundo.append('rgba(200, 0, 0, 0.12)')
 
                 # --------------------------------------------------------------
-                # DIVISÃO DA TELA: GRÁFICOS E NOTÍCIAS
+                # ESTRUTURA VISUAL: GRÁFICOS À ESQUERDA, NOTÍCIAS À DIREITA
                 # --------------------------------------------------------------
                 coluna_graficos, coluna_noticias = st.columns([3, 1])
 
                 with coluna_graficos:
+                    # Configuração Subplots
                     figura_tecnica = make_subplots(
                         rows=3, 
                         cols=1, 
@@ -549,6 +648,7 @@ with aba_analise_individual:
                     )
                     
                     if not df_plot.empty:
+                        # Preço Principal
                         figura_tecnica.add_trace(
                             go.Candlestick(
                                 x=df_plot.index, 
@@ -563,6 +663,7 @@ with aba_analise_individual:
                             secondary_y=False
                         )
                         
+                        # Médias
                         figura_tecnica.add_trace(
                             go.Scatter(
                                 x=df_plot.index, 
@@ -589,6 +690,7 @@ with aba_analise_individual:
                             secondary_y=False
                         )
                         
+                        # Volume Secundário
                         figura_tecnica.add_trace(
                             go.Bar(
                                 x=df_plot.index, 
@@ -602,6 +704,7 @@ with aba_analise_individual:
                             secondary_y=True
                         )
                         
+                        # Didi Fundo e Linhas
                         maximo_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
                         if pd.isna(maximo_y_didi) or maximo_y_didi == 0: 
                             maximo_y_didi = 1
@@ -668,6 +771,7 @@ with aba_analise_individual:
                             col=1
                         )
                         
+                        # ADX
                         figura_tecnica.add_trace(
                             go.Scatter(
                                 x=df_plot.index, 
@@ -704,6 +808,7 @@ with aba_analise_individual:
                             col=1
                         )
 
+                    # Estilos Finais Gráfico Principal
                     figura_tecnica.update_yaxes(
                         title_text="Preço (R$)", 
                         side="right", 
@@ -739,7 +844,7 @@ with aba_analise_individual:
                     st.plotly_chart(figura_tecnica, use_container_width=True)
 
                     # ----------------------------------------------------------
-                    # GRÁFICO DE BENCHMARKS FIXOS (Com tratamento para Cloud)
+                    # BENCHMARKS FIXOS E BLINDADOS CONTRA ERROS
                     # ----------------------------------------------------------
                     st.markdown("### 📊 Comparativo Contra Benchmarks Nacionais")
                     
@@ -769,6 +874,7 @@ with aba_analise_individual:
                     
                     for nome_indicador, ticker_indicador in mapa_indicadores.items():
                         try:
+                            # Busca ignorando erros de rede
                             df_benchmark = yf.download(ticker_indicador, start=limite_data, progress=False)
                             
                             if df_benchmark is not None and not df_benchmark.empty:
@@ -780,7 +886,8 @@ with aba_analise_individual:
                                 if 'Close' in df_benchmark.columns:
                                     serie_bench_limpa = df_benchmark['Close'].dropna()
                                     
-                                    if not serie_bench_limpa.empty:
+                                    # Validação crucial contra Index Error
+                                    if not serie_bench_limpa.empty and len(serie_bench_limpa) > 0:
                                         primeiro_preco_benchmark = float(serie_bench_limpa.iloc[0])
                                         
                                         if primeiro_preco_benchmark > 0:
@@ -795,7 +902,7 @@ with aba_analise_individual:
                                                 )
                                             )
                         except Exception:
-                            pass # Ignora se falhar devido à proteção na cloud
+                            pass # Ignora silenciosamente e mantem o app de pé
                             
                     figura_benchmarks.update_layout(
                         template='plotly_dark', 
@@ -817,7 +924,7 @@ with aba_analise_individual:
                     lista_noticias = buscar_noticias_google(ativo_buscado)
                     
                     if not lista_noticias:
-                        st.info("Não há comunicados recentes registados para este ativo no momento.")
+                        st.info("Não há comunicados recentes registados para este ativo no feed do Google Notícias.")
                     else:
                         for noticia in lista_noticias:
                             titulo_noticia = noticia['title']
@@ -833,7 +940,7 @@ with aba_analise_individual:
                             """, unsafe_allow_html=True)
                 
                 # --------------------------------------------------------------
-                # EVENTOS CORPORATIVOS
+                # AGENDA CORPORATIVA
                 # --------------------------------------------------------------
                 st.divider()
                 st.markdown("### 📅 Agenda de Eventos")
