@@ -128,7 +128,7 @@ df_resumo = pd.DataFrame(resultados)
 # ==============================================================================
 # --- CRIAÇÃO DAS ABAS DO SCRIPT ---
 # ==============================================================================
-tab_visao_geral, tab_analise_individual = st.tabs(["🌐 Visão Geral do Mercado", "🔬 Análise Detalhada por Ativo"])
+tab_visao_geral, tab_analise_individual, tab_agulhadas = st.tabs(["🌐 Visão Geral do Mercado", "🔬 Análise Detalhada por Ativo", "🎯 Agulhadas do Didi"])
 
 # ==============================================================================
 # --- ABA 1: VISÃO GERAL DO MERCADO ---
@@ -512,3 +512,213 @@ with tab_analise_individual:
                 st.info(f"🧾 **Próximo Balanço (Earnings):**\n\n{data_bal}")
             with c_ev2:
                 st.success(f"💰 **Data Com (Dividendos):**\n\n{data_div}")
+
+
+            # ==============================================================================
+            # --- ABA 3: AGULHADAS DO DIDI ---
+            # ==============================================================================
+            with tab_agulhadas:
+                st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
+                st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
+            
+                # --- FUNÇÕES DE DETECÇÃO ---
+                def calcular_didi(df_close):
+                    sma3  = df_close.rolling(3).mean()
+                    sma8  = df_close.rolling(8).mean()
+                    sma20 = df_close.rolling(20).mean()
+                    fast  = sma3 - sma8
+                    slow  = sma20 - sma8
+                    return fast, slow, sma3, sma8, sma20
+            
+                def detectar_agulhada(fast, slow):
+                    """
+                    Agulhada de Compra : fast e slow cruzam acima de 0 juntos
+                    Agulhada de Venda  : fast e slow cruzam abaixo de 0 juntos
+                    """
+                    sinais = []
+                    for i in range(1, len(fast)):
+                        f_ant, f_at = fast.iloc[i-1], fast.iloc[i]
+                        s_ant, s_at = slow.iloc[i-1], slow.iloc[i]
+                        if pd.isna(f_at) or pd.isna(s_at): continue
+            
+                        compra = (f_ant < 0 and f_at > 0 and s_at > 0) or \
+                                 (s_ant < 0 and s_at > 0 and f_at > 0)
+                        venda  = (f_ant > 0 and f_at < 0 and s_at < 0) or \
+                                 (s_ant > 0 and s_at < 0 and f_at < 0)
+            
+                        if compra:
+                            sinais.append((fast.index[i], 'COMPRA'))
+                        elif venda:
+                            sinais.append((fast.index[i], 'VENDA'))
+                    return sinais
+            
+                # --- VARREDURA DE TODOS OS ATIVOS ---
+                col_cfg1, col_cfg2 = st.columns([1, 2])
+                with col_cfg1:
+                    dias_scanner = st.selectbox("Período da varredura:", [30, 60, 90, 180], index=1, format_func=lambda x: f"Últimos {x} dias")
+            
+                with st.spinner("🔍 Varrendo todos os ativos em busca de agulhadas..."):
+                    resultados_agulhada = []
+            
+                    for ativo in ativos_lista:
+                        if ativo not in precos_fechamento.columns:
+                            continue
+                        serie = precos_fechamento[ativo].dropna()
+                        if len(serie) < 30:
+                            continue
+            
+                        fast, slow, sma3, sma8, sma20 = calcular_didi(serie)
+                        sinais = detectar_agulhada(fast, slow)
+            
+                        # Filtra pelos últimos N dias
+                        corte = pd.Timestamp.now() - pd.Timedelta(days=dias_scanner)
+                        sinais_recentes = [(d, t) for d, t in sinais if d >= corte]
+            
+                        if sinais_recentes:
+                            ultimo_sinal_data, ultimo_sinal_tipo = sinais_recentes[-1]
+                            dias_atras = (pd.Timestamp.now() - ultimo_sinal_data).days
+                            preco_sinal = float(serie[serie.index >= ultimo_sinal_data].iloc[0]) if not serie[serie.index >= ultimo_sinal_data].empty else 0
+                            preco_atual_ag = float(serie.iloc[-1])
+                            retorno = ((preco_atual_ag / preco_sinal) - 1) * 100 if preco_sinal > 0 else 0
+            
+                            resultados_agulhada.append({
+                                'Ativo': ativo.replace('.SA',''),
+                                'Setor': ativos_setores[ativo],
+                                'Sinal': ultimo_sinal_tipo,
+                                'Data do Sinal': ultimo_sinal_data.strftime('%d/%m/%Y'),
+                                'Dias Atrás': dias_atras,
+                                'Preço no Sinal (R$)': round(preco_sinal, 2),
+                                'Preço Atual (R$)': round(preco_atual_ag, 2),
+                                'Retorno desde Sinal (%)': round(retorno, 2),
+                                'Total de Sinais': len(sinais_recentes)
+                            })
+            
+                df_agulhadas = pd.DataFrame(resultados_agulhada)
+            
+                if df_agulhadas.empty:
+                    st.warning("Nenhuma agulhada encontrada no período selecionado.")
+                else:
+                    # --- MÉTRICAS RESUMO ---
+                    total_compra = len(df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'])
+                    total_venda  = len(df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'])
+            
+                    m1, m2, m3, m4 = st.columns(4)
+                    m1.metric("📊 Ativos com Sinal", len(df_agulhadas))
+                    m2.metric("🟢 Agulhadas de Compra", total_compra)
+                    m3.metric("🔴 Agulhadas de Venda", total_venda)
+                    m4.metric("⚖️ Saldo (C - V)", total_compra - total_venda)
+            
+                    st.markdown("<br>", unsafe_allow_html=True)
+            
+                    # --- TABELA COM CORES ---
+                    compras = df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'].sort_values('Dias Atrás')
+                    vendas  = df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'].sort_values('Dias Atrás')
+            
+                    col_t1, col_t2 = st.columns(2)
+                    with col_t1:
+                        st.markdown("#### 🟢 Agulhadas de Compra")
+                        if not compras.empty:
+                            st.dataframe(
+                                compras[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']],
+                                use_container_width=True, hide_index=True
+                            )
+                        else:
+                            st.info("Nenhuma agulhada de compra no período.")
+            
+                    with col_t2:
+                        st.markdown("#### 🔴 Agulhadas de Venda")
+                        if not vendas.empty:
+                            st.dataframe(
+                                vendas[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']],
+                                use_container_width=True, hide_index=True
+                            )
+                        else:
+                            st.info("Nenhuma agulhada de venda no período.")
+            
+                    st.divider()
+            
+                    # --- GRÁFICO INDIVIDUAL ---
+                    st.markdown("### 🔬 Análise Individual do Sinal")
+                    ativos_com_sinal = df_agulhadas['Ativo'].tolist()
+                    ativo_ag = st.selectbox("Selecione o ativo para ver o gráfico com os sinais:", ativos_com_sinal)
+            
+                    if ativo_ag:
+                        ativo_ag_full = ativo_ag + '.SA'
+                        df_ag_hist = yf.download(ativo_ag_full, period="1y")
+            
+                        if not df_ag_hist.empty:
+                            if isinstance(df_ag_hist.columns, pd.MultiIndex):
+                                df_ag_hist.columns = df_ag_hist.columns.droplevel(1)
+            
+                            fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag = calcular_didi(df_ag_hist['Close'])
+                            sinais_ag = detectar_agulhada(fast_ag, slow_ag)
+            
+                            fig_ag = make_subplots(
+                                rows=2, cols=1, shared_xaxes=True,
+                                vertical_spacing=0.05, row_heights=[0.65, 0.35],
+                                subplot_titles=(f'Preço {ativo_ag} com Agulhadas', 'Didi Index (Fast e Slow)')
+                            )
+            
+                            # Candlestick
+                            fig_ag.add_trace(go.Candlestick(
+                                x=df_ag_hist.index,
+                                open=df_ag_hist['Open'], high=df_ag_hist['High'],
+                                low=df_ag_hist['Low'], close=df_ag_hist['Close'],
+                                name='Preço', increasing_line_color='#228B22', decreasing_line_color='#B22222'
+                            ), row=1, col=1)
+            
+                            # Médias
+                            for s, c, n in zip([sma3_ag, sma8_ag, sma20_ag],
+                                               ['#00BFFF', '#FFD700', '#FF69B4'],
+                                               ['SMA3', 'SMA8', 'SMA20']):
+                                fig_ag.add_trace(go.Scatter(
+                                    x=df_ag_hist.index, y=s, mode='lines',
+                                    name=n, line=dict(color=c, width=1.2)
+                                ), row=1, col=1)
+            
+                            # Sinais no gráfico de preço
+                            for data_s, tipo_s in sinais_ag:
+                                if data_s not in df_ag_hist.index: continue
+                                preco_s = float(df_ag_hist.loc[data_s, 'Low']) if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
+                                cor_s   = '#00FF00' if tipo_s == 'COMPRA' else '#FF0000'
+                                simbolo = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
+                                fig_ag.add_trace(go.Scatter(
+                                    x=[data_s], y=[preco_s],
+                                    mode='markers',
+                                    marker=dict(symbol=simbolo, size=14, color=cor_s, line=dict(color='white', width=1)),
+                                    name=f'Agulhada {tipo_s}',
+                                    showlegend=True
+                                ), row=1, col=1)
+            
+                            # Didi lines no painel inferior
+                            fig_ag.add_trace(go.Scatter(
+                                x=df_ag_hist.index, y=fast_ag, mode='lines',
+                                name='Didi Rápida (3)', line=dict(color='#00BFFF', width=1.5)
+                            ), row=2, col=1)
+                            fig_ag.add_trace(go.Scatter(
+                                x=df_ag_hist.index, y=slow_ag, mode='lines',
+                                name='Didi Lenta (20)', line=dict(color='#FFD700', width=1.5)
+                            ), row=2, col=1)
+                            fig_ag.add_hline(y=0, line=dict(color='white', dash='dot', width=1), row=2, col=1)
+            
+                            fig_ag.update_layout(
+                                template='plotly_dark', height=750,
+                                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                            )
+                            fig_ag.update_xaxes(rangeslider_visible=False)
+                            st.plotly_chart(fig_ag, use_container_width=True)
+            
+                # --- LEGENDA DO MÉTODO ---
+                with st.expander("📖 Como funciona o método Didi Aguiar?"):
+                    st.markdown("""
+                    **O Índice Didi** usa 3 médias móveis simples como referência central a SMA8:
+                    
+                    - **Didi Rápida** = SMA3 − SMA8  
+                    - **Didi Lenta** = SMA20 − SMA8  
+                    
+                    **🟢 Agulhada de Compra:** as duas linhas cruzam a linha zero de baixo para cima **simultaneamente** — indica início de tendência de alta.
+                    
+                    **🔴 Agulhada de Venda:** as duas linhas cruzam a linha zero de cima para baixo **simultaneamente** — indica início de tendência de baixa.
+                    
+                    > ⚠️ Este scanner é uma **ferramenta de apoio**. Sempre confirme o sinal com outros indicadores antes de operar.
+                    """)
