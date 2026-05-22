@@ -350,10 +350,11 @@ with tab_analise_individual:
                 col_graficos, col_noticias = st.columns([3, 1])
 
                 with col_graficos:
+                    # DEPOIS:
                     fig_plotly = make_subplots(
-                        rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.75, 0.25],
-                        specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
-                        subplot_titles=('Gráfico de Preço e Volume', 'Didi Plus (3, 8, 20)')
+                        rows=1, cols=1,
+                        specs=[[{"secondary_y": True}]],
+                        subplot_titles=('Gráfico de Preço e Volume',)
                     )
 
                     fig_plotly.add_trace(go.Candlestick(
@@ -372,19 +373,10 @@ with tab_analise_individual:
                         marker_color=cores_volume, opacity=0.35
                     ), row=1, col=1, secondary_y=True)
 
-                    max_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
-                    if pd.isna(max_y_didi) or max_y_didi == 0: max_y_didi = 1
-
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[max_y_didi]*len(df_plot),  marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[-max_y_didi]*len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=np.zeros(len(df_plot)), mode='lines', name='Didi Normal', line=dict(color='white', width=1, dash='dot')), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiSlow'], mode='lines', name='Didi Lenta (20)', line=dict(color='#FFD700', width=2)), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiFast'], mode='lines', name='Didi Rápida (3)', line=dict(color='#00BFFF', width=2)), row=2, col=1)
-
                     fig_plotly.update_yaxes(title_text="Preço (R$)", side="right", row=1, col=1, secondary_y=False)
                     fig_plotly.update_yaxes(showgrid=False, showticklabels=False, range=[0, df_plot['Volume'].max() * 4], row=1, col=1, secondary_y=True)
                     fig_plotly.update_layout(
-                        template='plotly_dark', height=800, showlegend=True,
+                        template='plotly_dark', height=600, showlegend=True,
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         barmode='relative'
                     )
