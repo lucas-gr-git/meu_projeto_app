@@ -565,7 +565,7 @@ with tab_analise_individual:
                         if f_at < 0 and s_at < 0:
                             sinais.append((fast.index[i], 'VENDA'))
             
-                return sinais
+                    return sinais
             
                 # --- VARREDURA DE TODOS OS ATIVOS ---
                 col_cfg1, col_cfg2 = st.columns([1, 2])
