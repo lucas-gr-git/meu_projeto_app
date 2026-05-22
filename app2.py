@@ -9,13 +9,26 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 import json
+import requests
 
+# ==============================================================================
+# --- SESSÃO CUSTOMIZADA PARA BURLAR BLOQUEIO DE IP NO CLOUD ---
+# ==============================================================================
+session_yf = requests.Session()
+session_yf.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+})
+
+# ==============================================================================
 # --- CONFIGURAÇÃO DA PÁGINA ---
+# ==============================================================================
 st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
 st.title("🖥️ Terminal Profissional de Inteligência Mercado - B3")
 st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notícias em Tempo Real.")
 
+# ==============================================================================
 # --- LISTA DAS TOP 70 AÇÕES SEPARADAS POR SETOR ---
+# ==============================================================================
 ativos_setores = {
     'ITUB4.SA': 'Financeiro', 'BBDC4.SA': 'Financeiro', 'BBAS3.SA': 'Financeiro', 'SANB11.SA': 'Financeiro', 'BPAC11.SA': 'Financeiro', 'B3SA3.SA': 'Financeiro', 'BBSE3.SA': 'Financeiro', 'CXSE3.SA': 'Financeiro', 'IRBR3.SA': 'Financeiro', 'PSSA3.SA': 'Financeiro',
     'PETR4.SA': 'Petróleo e Gás', 'PETR3.SA': 'Petróleo e Gás', 'PRIO3.SA': 'Petróleo e Gás', 'RECV3.SA': 'Petróleo e Gás', 'ENAT3.SA': 'Petróleo e Gás', 'RRRP3.SA': 'Petróleo e Gás', 'UGPA3.SA': 'Petróleo e Gás', 'VBBR3.SA': 'Petróleo e Gás', 'CSAN3.SA': 'Petróleo e Gás',
@@ -31,16 +44,18 @@ ativos_setores = {
     'SUZB3.SA': 'Papel e Celulose', 'KLBN11.SA': 'Papel e Celulose',
     'CYRE3.SA': 'Construção', 'MRVE3.SA': 'Construção', 'EZTC3.SA': 'Construção', 'TEND3.SA': 'Construção'
 }
-
 ativos_lista = list(ativos_setores.keys())
 
-# --- FUNÇÕES DE CARREGAMENTO COM CACHE ---
+# ==============================================================================
+# --- FUNÇÕES DE CARREGAMENTO E APOIO ---
+# ==============================================================================
 @st.cache_data(ttl=300)
-def carregar_dados(ativos, dias):
+def carregar_dados_geral(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
-    dados = yf.download(ativos, start=inicio, end=hoje)
-    return dados['Close'], dados
+    # Passando a sessão mascarada para garantir que o download não seja barrado
+    dados = yf.download(ativos, start=inicio, end=hoje, session=session_yf)
+    return dados['Close']
 
 @st.cache_data(ttl=600)
 def buscar_noticias_google(ativo):
@@ -57,20 +72,20 @@ def buscar_noticias_google(ativo):
         noticias = []
         for item in root.findall('.//item')[:6]:
             titulo = item.find('title').text
-            link = item.find('link').text
-            fonte = item.find('source').text if item.find('source') is not None else 'Google News'
-            pub_date = item.find('pubDate').text
-            try:
-                partes = pub_date.split(' ')
-                data_formatada = f"{partes[1]} {partes[2]} {partes[3]} • {partes[4][:5]}"
-            except:
-                data_formatada = pub_date
-            noticias.append({'title': titulo, 'link': link, 'publisher': fonte, 'time': data_formatada})
+            if titulo and titulo != "None" and "Sem título" not in titulo and len(titulo) > 5:
+                link = item.find('link').text
+                fonte = item.find('source').text if item.find('source') is not None else 'Google News'
+                pub_date = item.find('pubDate').text
+                try:
+                    partes = pub_date.split(' ')
+                    data_formatada = f"{partes[1]} {partes[2]} {partes[3]} • {partes[4][:5]}"
+                except:
+                    data_formatada = pub_date
+                noticias.append({'title': titulo, 'link': link, 'publisher': fonte, 'time': data_formatada})
         return noticias
     except Exception as e:
         return []
 
-# FUNÇÕES AUXILIARES DE FORMATAÇÃO
 def fmt_br(val, is_pct=False, currency=False):
     if pd.isna(val) or val is None or val == "-": return "-"
     texto = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -80,66 +95,57 @@ def fmt_br(val, is_pct=False, currency=False):
 
 def cor_variacao(val):
     if pd.isna(val) or val == "-": return "#FFFFFF"
-    return "#228B22" if val > 0 else "#B22222" if val < 0 else "#FFFFFF"
+    if val > 0: return "#228B22"
+    elif val < 0: return "#B22222"
+    else: return "#FFFFFF"
 
-# Baixa 365 dias para garantir o cálculo das médias
-precos_fechamento, dados_completos = carregar_dados(ativos_lista, 365)
-
-# --- PROCESSAMENTO DE MÉTRICAS (PAINEL GERAL) ---
+# ==============================================================================
+# --- PROCESSAMENTO GERAL ---
+# ==============================================================================
+precos_fechamento = carregar_dados_geral(ativos_lista, 365)
 resultados = []
+
 for ativo in ativos_lista:
     df = pd.DataFrame()
     if ativo in precos_fechamento.columns:
         df['Close'] = precos_fechamento[ativo]
         
+        # Cálculos de médias móveis
+        df['SMA20'] = df['Close'].rolling(window=20).mean()
         df['SMA50'] = df['Close'].rolling(window=50).mean()
-        df['SMA100'] = df['Close'].rolling(window=100).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
         
-        delta = df['Close'].diff()
-        ganho = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        perda = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-        rs = ganho / perda
-        df['RSI'] = 100 - (100 / (1 + rs))
-        
         ultimo_preco = float(df['Close'].dropna().iloc[-1]) if not df['Close'].dropna().empty else 0
+        sma20 = float(df['SMA20'].dropna().iloc[-1]) if not df['SMA20'].dropna().empty else 0
         sma50 = float(df['SMA50'].dropna().iloc[-1]) if not df['SMA50'].dropna().empty else 0
-        sma100 = float(df['SMA100'].dropna().iloc[-1]) if not df['SMA100'].dropna().empty else 0
         sma200 = float(df['SMA200'].dropna().iloc[-1]) if not df['SMA200'].dropna().empty else 0
-        rsi = float(df['RSI'].dropna().iloc[-1]) if not df['RSI'].dropna().empty else np.nan
         
         variacao_diaria = float(df['Close'].dropna().pct_change().iloc[-1] * 100) if len(df['Close'].dropna()) > 1 else 0.0
         
-        tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
-        tendencia_media = 'Alta' if ultimo_preco > sma100 else 'Baixa'
-        tendencia_longa = 'Alta' if ultimo_preco > sma200 else 'Baixa' if sma200 > 0 else 'N/A'
-            
-        sentimento = 'Sobrecomprado' if rsi > 70 else 'Sobrevendido' if rsi < 30 else 'Neutro'
-
         resultados.append({
-            'Ativo': ativo.replace('.SA', ''), 'Setor': ativos_setores[ativo], 'Preço (R$)': round(ultimo_preco, 2),
-            'Variação (%)': round(variacao_diaria, 2), 'Tendência Curta (50D)': tendencia_curta,
-            'Tendência Média (100D)': tendencia_media, 'Tendência Longa (200D)': tendencia_longa, 'Sentimento': sentimento
+            'Ativo': ativo.replace('.SA', ''), 
+            'Setor': ativos_setores[ativo], 
+            'Preço (R$)': round(ultimo_preco, 2),
+            'Variação (%)': round(variacao_diaria, 2), 
+            'Tendência (50D)': 'Alta' if ultimo_preco > sma50 else 'Baixa',
+            'Tendência (100D)': 'Alta' if ultimo_preco > sma50 else 'Baixa',
+            'Tendência (200D)': 'Alta' if ultimo_preco > sma200 else 'Baixa' if sma200 > 0 else 'N/A'
         })
 
 df_resumo = pd.DataFrame(resultados)
 
-
 # ==============================================================================
-# --- CRIAÇÃO DAS ABAS DO SCRIPT ---
+# --- CRIAÇÃO DAS ABAS ---
 # ==============================================================================
 tab_visao_geral, tab_analise_individual = st.tabs(["🌐 Visão Geral do Mercado", "🔬 Análise Detalhada por Ativo"])
 
-# ==============================================================================
-# --- ABA 1: VISÃO GERAL DO MERCADO ---
-# ==============================================================================
 with tab_visao_geral:
     st.markdown("### 📊 Mapa de Calor do Mercado")
     
-    ids, labels, parents, values, colors, customdata = ["B3"], ["B3"], [""], [0], ["#2b2e35"], [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
+    ids = ["B3"]; labels = ["B3"]; parents = [""]; values = [0]; colors = ["#FFFFFF"]; customdata = [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
     
     for setor in df_resumo['Setor'].unique():
-        ids.append(setor); labels.append(setor); parents.append("B3"); values.append(0); colors.append("#2b2e35")
+        ids.append(setor); labels.append(setor); parents.append("B3"); values.append(0); colors.append("#FFFFFF")
         customdata.append([f"<b>Setor: {setor}</b>", f"<b>{setor}</b>"])
         ids.append(setor + "_fantasma"); labels.append(""); parents.append(setor); values.append(0.000001); colors.append("#FFFFFF"); customdata.append(["", ""])
 
@@ -151,7 +157,7 @@ with tab_visao_geral:
         preco_br = fmt_br(preco)
         var_br = f"{var:+.2f}%".replace(".", ",")
         
-        hover = f"<b>{row['Ativo']}</b><br>Variação: {var_br}<br>Preço: R$ {preco_br}<br><br>Curta: {row['Tendência Curta (50D)']}<br>Média: {row['Tendência Média (100D)']}<br>Longa: {row['Tendência Longa (200D)']}"
+        hover = f"<b>{row['Ativo']}</b><br>Var: {var_br}<br>Preço: R$ {preco_br}"
         block = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
         customdata.append([hover, block])
 
@@ -172,12 +178,12 @@ with tab_visao_geral:
 
 
 # ==============================================================================
-# --- ABA 2: ANÁLISE DETALHADA POR ATIVO ---
+# --- ABA 2: ANÁLISE DETALHADA ---
 # ==============================================================================
 with tab_analise_individual:
     col_busca, col_tempo = st.columns([1, 1])
     with col_busca:
-        ativo_buscado = st.text_input("🔍 Digite o código do ativo (Ex: PETR4, MGLU3, AAPL):", key="search_asset").upper().strip()
+        ativo_buscado = st.text_input("🔍 Digite o código do ativo (Ex: PETR4, MGLU3):", key="search_asset").upper().strip()
     
     if ativo_buscado:
         if not ativo_buscado.endswith('.SA') and any(char.isdigit() for char in ativo_buscado):
@@ -189,13 +195,14 @@ with tab_analise_individual:
             periodo_selecionado = mapa_periodos[janela_tempo]
 
         with st.spinner("Processando histórico de 10 anos e fundamentos..."):
-            ticker_obj = yf.Ticker(ativo_buscado)
+            # Passando a sessão mascarada para o Ticker também
+            ticker_obj = yf.Ticker(ativo_buscado, session=session_yf)
             
             # Baixando histórico gigante para a Rentabilidade (10 Anos)
-            df_hist = yf.download(ativo_buscado, period="10y")
+            df_hist = yf.download(ativo_buscado, period="10y", session=session_yf)
             
             if df_hist.empty:
-                st.error("⚠️ Código não encontrado no banco de dados.")
+                st.error("⚠️ Código não encontrado.")
             else:
                 if isinstance(df_hist.columns, pd.MultiIndex):
                     df_hist.columns = df_hist.columns.droplevel(1)
@@ -223,19 +230,12 @@ with tab_analise_individual:
                 except: 
                     pass
 
-                val_var12m = ret_1a if ret_1a != "-" else info.get('52WeekChange', "-")
-                if val_var12m != "-" and isinstance(val_var12m, float) and '52WeekChange' in info:
-                    val_var12m = val_var12m * 100 if val_var12m < 1 else val_var12m
-
+                val_var12m = ret_1a if ret_1a != "-" else info.get('52WeekChange', 0) * 100
                 val_pl = info.get('trailingPE', "-")
                 val_pvp = info.get('priceToBook', "-")
                 
-                val_dy = info.get('trailingAnnualDividendYield')
-                if val_dy is None:
-                    val_dy = info.get('dividendYield', "-")
-                
-                if val_dy != "-": 
-                    val_dy = val_dy * 100
+                val_dy = info.get('trailingAnnualDividendYield') or info.get('dividendYield', 0)
+                if val_dy: val_dy = val_dy * 100
 
                 # --- CARDS ESTILO STATUS INVEST ---
                 st.markdown(f"""
@@ -300,7 +300,8 @@ with tab_analise_individual:
                 )
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- CÁLCULOS TÉCNICOS NO HISTÓRICO COMPLETO ---
+                # --- CÁLCULOS TÉCNICOS ---
+                df_hist['SMA20'] = df_hist['Close'].rolling(window=20).mean()
                 df_hist['SMA50'] = df_hist['Close'].rolling(window=50).mean()
                 df_hist['SMA100'] = df_hist['Close'].rolling(window=100).mean()
                 df_hist['SMA200'] = df_hist['Close'].rolling(window=200).mean()
@@ -311,16 +312,11 @@ with tab_analise_individual:
                 df_hist['DidiFast'] = sma3 - sma8
                 df_hist['DidiSlow'] = sma20_didi - sma8
                 
-                tr1 = df_hist['High'] - df_hist['Low']
-                tr2 = (df_hist['High'] - df_hist['Close'].shift(1)).abs()
-                tr3 = (df_hist['Low'] - df_hist['Close'].shift(1)).abs()
-                tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-                
+                tr = pd.concat([df_hist['High'] - df_hist['Low'], (df_hist['High'] - df_hist['Close'].shift(1)).abs(), (df_hist['Low'] - df_hist['Close'].shift(1)).abs()], axis=1).max(axis=1)
                 up_m = df_hist['High'] - df_hist['High'].shift(1)
                 dn_m = df_hist['Low'].shift(1) - df_hist['Low']
                 pos_dm = pd.Series(np.where((up_m > dn_m) & (up_m > 0), up_m, 0), index=df_hist.index)
                 neg_dm = pd.Series(np.where((dn_m > up_m) & (dn_m > 0), dn_m, 0), index=df_hist.index)
-                
                 tr8 = tr.rolling(8).sum()
                 df_hist['PDI'] = 100 * pos_dm.rolling(8).sum() / tr8
                 df_hist['NDI'] = 100 * neg_dm.rolling(8).sum() / tr8
@@ -328,10 +324,10 @@ with tab_analise_individual:
 
                 # --- CORTE DE DADOS PARA EXIBIÇÃO NO GRÁFICO ---
                 limite_data = datetime.now() - (timedelta(days=30) if janela_tempo == "1 Mês" else timedelta(days=180) if janela_tempo == "6 Meses" else timedelta(days=365) if janela_tempo == "1 Ano" else timedelta(days=730) if janela_tempo == "2 Anos" else timedelta(days=1825))
-                df_plot = df_hist[df_hist.index >= limite_data].copy()
+                df_p = df_hist[df_hist.index >= limite_data].copy()
                 
-                cores_volume = ['#228B22' if r.Close >= r.Open else '#B22222' for r in df_plot.itertuples()]
-                cores_didi_bg = ['rgba(0, 150, 0, 0.12)' if p > n else 'rgba(200, 0, 0, 0.12)' for p, n in zip(df_plot['PDI'], df_plot['NDI'])]
+                cores_volume = ['#228B22' if r.Close >= r.Open else '#B22222' for r in df_p.itertuples()]
+                cores_didi_bg = ['rgba(0, 150, 0, 0.12)' if p > n else 'rgba(200, 0, 0, 0.12)' for p, n in zip(df_p['PDI'], df_p['NDI'])]
 
                 # --- LAYOUT: GRÁFICOS VS NOTÍCIAS ---
                 col_graficos, col_noticias = st.columns([3, 1])
@@ -343,163 +339,63 @@ with tab_analise_individual:
                         subplot_titles=('Gráfico de Preço e Volume', 'Didi Plus (3, 8, 20)', 'DMI / ADX (8)')
                     )
                     
-                    fig_plotly.add_trace(go.Candlestick(
-                        x=df_plot.index, open=df_plot['Open'], high=df_plot['High'], low=df_plot['Low'], close=df_plot['Close'], name='Candlestick'
-                    ), row=1, col=1, secondary_y=False)
+                    fig_plotly.add_trace(go.Candlestick(x=df_p.index, open=df_p['Open'], high=df_p['High'], low=df_p['Low'], close=df_p['Close'], name='Candlestick'), row=1, col=1, secondary_y=False)
+                    for m, c in zip(['SMA50','SMA200'], ['#00BFFF', 'white']): fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p[m], name=m, line=dict(color=c, width=1.5)), row=1, col=1, secondary_y=False)
+                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=df_p['Volume'], name='Volume', marker_color=cores_volume, opacity=0.35), row=1, col=1, secondary_y=True)
                     
-                    for m, c in zip(['SMA50','SMA100','SMA200'], ['#00BFFF', '#BA55D3', 'white']):
-                        fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot[m], mode='lines', name=f'Média {m.replace("SMA","")}', line=dict(color=c, width=1.5)), row=1, col=1, secondary_y=False)
-                    
-                    fig_plotly.add_trace(go.Bar(
-                        x=df_plot.index, y=df_plot['Volume'], name='Volume', marker_color=cores_volume, opacity=0.35
-                    ), row=1, col=1, secondary_y=True)
-                    
-                    max_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
+                    max_y_didi = max(df_p['DidiFast'].abs().max(), df_p['DidiSlow'].abs().max()) * 1.4
                     if pd.isna(max_y_didi) or max_y_didi == 0: max_y_didi = 1
+                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=[max_y_didi] * len(df_p), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
+                    fig_plotly.add_trace(go.Bar(x=df_p.index, y=[-max_y_didi] * len(df_p), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=np.zeros(len(df_p)), mode='lines', name='Didi Normal', line=dict(color='white', width=1, dash='dot')), row=2, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['DidiSlow'], name='Didi Lenta', line=dict(color='#FF00FF', width=2)), row=2, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['DidiFast'], name='Didi Rápida', line=dict(color='#00BFFF', width=2)), row=2, col=1)
                     
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[max_y_didi] * len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[-max_y_didi] * len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=np.zeros(len(df_plot)), mode='lines', name='Didi Normal', line=dict(color='white', width=1, dash='dot')), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiSlow'], mode='lines', name='Didi Lenta (20)', line=dict(color='#FFD700', width=2)), row=2, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiFast'], mode='lines', name='Didi Rápida (3)', line=dict(color='#00BFFF', width=2)), row=2, col=1)
-                    
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['ADX'], mode='lines', name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['PDI'], mode='lines', name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['NDI'], mode='lines', name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['ADX'], name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['PDI'], name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
+                    fig_plotly.add_trace(go.Scatter(x=df_p.index, y=df_p['NDI'], name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
 
-                    fig_plotly.update_yaxes(title_text="Preço (R$)", side="right", row=1, col=1, secondary_y=False)
-                    fig_plotly.update_yaxes(showgrid=False, showticklabels=False, range=[0, df_plot['Volume'].max() * 4], row=1, col=1, secondary_y=True)
-                    
-                    fig_plotly.update_layout(
-                        template='plotly_dark', height=900, showlegend=True,
-                        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                        barmode='relative'
-                    )
-                    fig_plotly.update_xaxes(rangeslider_visible=False)
+                    fig_plotly.update_yaxes(title_text="Preço", side="right", row=1, col=1, secondary_y=False)
+                    fig_plotly.update_yaxes(showgrid=False, showticklabels=False, range=[0, df_p['Volume'].max() * 4], row=1, col=1, secondary_y=True)
+                    fig_plotly.update_layout(template='plotly_dark', height=900, showlegend=True, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1), barmode='relative', xaxis_rangeslider_visible=False)
                     st.plotly_chart(fig_plotly, use_container_width=True)
 
-                with col_noticias:
-                    st.markdown("### 📰 Notícias Recentes")
-                    noticias = buscar_noticias_google(ativo_buscado)
+                    # --- BENCHMARK FIXO ---
+                    st.markdown("### 📊 Comparativo de Benchmarks")
+                    fig_bench = go.Figure()
+                    ativo_norm = (df_p['Close'] / float(df_p['Close'].iloc[0]) - 1) * 100
+                    fig_bench.add_trace(go.Scatter(x=ativo_norm.index, y=ativo_norm, name=ativo_buscado, line=dict(color='#00BFFF', width=2.5)))
                     
-                    if not noticias:
-                        st.info("Nenhuma notícia recente encontrada para este ativo.")
-                    else:
-                        for n in noticias:
-                            st.markdown(f"""
-                            <div style="border: 1px solid #444444; border-radius: 5px; padding: 10px; margin-bottom: 12px; background-color: #1e1e1e;">
-                                <a href="{n['link']}" target="_blank" style="color: #00BFFF; text-decoration: none; font-weight: bold; font-size: 14px;">{n['title']}</a>
-                                <p style="color: #888888; font-size: 11px; margin: 5px 0 0 0;">{n['publisher']} • {n['time']}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-            st.divider()
-
-            # ==============================================================================
-            # --- BENCHMARK IBOVESPA E OUTROS ÍNDICES (MULTILINE) ---
-            # ==============================================================================
-            st.markdown(f"### 📊 Comparativo de Desempenho e Benchmarks")
-            
-            benchmarks_selecionados = ['IBOV', 'IFIX', 'SMLL', 'IDIV', 'IVVB11', 'CDI', 'IPCA']
-
-            with st.spinner("Calculando Benchmarks e normalizando as escalas..."):
-                fig_bench = go.Figure()
-
-                # 1. Plota o Ativo Principal Normalizado
-                if not df_plot.empty:
-                    primeiro_preco_ativo = float(df_plot['Close'].iloc[0])
-                    ativo_norm = (df_plot['Close'] / primeiro_preco_ativo - 1) * 100
-                    fig_bench.add_trace(go.Scatter(x=ativo_norm.index, y=ativo_norm, mode='lines', name=ativo_buscado, line=dict(color='#00BFFF', width=2.5)))
-
-                # 2. Configuração dos Benchmarks
-                mapa_yf = {
-                    'IBOV': '^BVSP', 'IFIX': 'XFIX11.SA', 'SMLL': 'SMAL11.SA', 
-                    'IDIV': 'DIVO11.SA', 'IVVB11': 'IVVB11.SA'
-                }
-                cores_bench = {
-                    'IBOV': 'white', 'IFIX': '#32CD32', 'SMLL': '#FFD700', 
-                    'IDIV': '#FF69B4', 'IVVB11': '#FFA500', 'CDI': '#87CEFA', 'IPCA': '#FF6347'
-                }
-
-                data_inicio_yf = limite_data.strftime('%Y-%m-%d')
-                data_inicio_bcb = limite_data.strftime('%d/%m/%Y')
-
-                for b in benchmarks_selecionados:
-                    cor = cores_bench.get(b, 'white')
-
-                    # BUSCA NO YAHOO FINANCE (ETFs e Índices)
-                    if b in mapa_yf:
-                        df_b = yf.download(mapa_yf[b], start=data_inicio_yf)
+                    mapa = {'IBOV': '^BVSP', 'IFIX': 'XFIX11.SA', 'SMLL': 'SMAL11.SA', 'IDIV': 'DIVO11.SA', 'IVVB11': 'IVVB11.SA'}
+                    for b, t in mapa.items():
+                        # Adiciona session_yf para burlar bloqueio também nos benchmarks
+                        df_b = yf.download(t, start=limite_data, session=session_yf, progress=False)
                         if not df_b.empty:
-                            if isinstance(df_b.columns, pd.MultiIndex):
-                                df_b.columns = df_b.columns.droplevel(1)
-                            df_b_plot = df_b[df_b.index >= limite_data]
-                            if not df_b_plot.empty:
-                                p_preco = float(df_b_plot['Close'].iloc[0])
-                                b_norm = (df_b_plot['Close'] / p_preco - 1) * 100
-                                fig_bench.add_trace(go.Scatter(x=b_norm.index, y=b_norm, mode='lines', name=b, line=dict(color=cor, width=1.5, dash='dot' if b=='IBOV' else 'solid')))
+                            df_b = df_b[~df_b.index.duplicated(keep='first')]
+                            b_norm = (df_b['Close'] / float(df_b['Close'].iloc[0]) - 1) * 100
+                            fig_bench.add_trace(go.Scatter(x=b_norm.index, y=b_norm, name=b, line=dict(width=1.5, dash='dot')))
+                    
+                    fig_bench.update_layout(template='plotly_dark', height=400, yaxis_title="Performance (%)")
+                    st.plotly_chart(fig_bench, use_container_width=True)
 
-                    # BUSCA NO BANCO CENTRAL DO BRASIL (CDI - SGS 12)
-                    elif b == 'CDI':
-                        url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial={data_inicio_bcb}"
-                        try:
-                            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                            with urllib.request.urlopen(req) as res:
-                                data = json.loads(res.read().decode('utf-8'))
-                            df_cdi = pd.DataFrame(data)
-                            df_cdi['data'] = pd.to_datetime(df_cdi['data'], format='%d/%m/%Y')
-                            df_cdi.set_index('data', inplace=True)
-                            df_cdi['valor'] = df_cdi['valor'].astype(float)
-                            cdi_acumulado = ((1 + df_cdi['valor'] / 100).cumprod() - 1) * 100
-                            fig_bench.add_trace(go.Scatter(x=cdi_acumulado.index, y=cdi_acumulado, mode='lines', name='CDI', line=dict(color=cor, width=1.5)))
-                        except: pass
-
-                    # BUSCA NO BANCO CENTRAL DO BRASIL (IPCA - SGS 433)
-                    elif b == 'IPCA':
-                        url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial={data_inicio_bcb}"
-                        try:
-                            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-                            with urllib.request.urlopen(req) as res:
-                                data = json.loads(res.read().decode('utf-8'))
-                            df_ipca = pd.DataFrame(data)
-                            df_ipca['data'] = pd.to_datetime(df_ipca['data'], format='%d/%m/%Y')
-                            df_ipca.set_index('data', inplace=True)
-                            df_ipca['valor'] = df_ipca['valor'].astype(float)
-                            ipca_acumulado = ((1 + df_ipca['valor'] / 100).cumprod() - 1) * 100
-                            # Preenche os dias vazios do mês mantendo o valor contínuo na tela
-                            idx = pd.date_range(start=ipca_acumulado.index[0], end=datetime.today())
-                            ipca_acumulado = ipca_acumulado.reindex(idx, method='ffill')
-                            fig_bench.add_trace(go.Scatter(x=ipca_acumulado.index, y=ipca_acumulado, mode='lines', name='IPCA', line=dict(color=cor, width=1.5)))
-                        except: pass
-
-                fig_bench.update_layout(
-                    template='plotly_dark', height=450,
-                    yaxis_title="Desempenho Acumulado (%)",
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                st.plotly_chart(fig_bench, use_container_width=True)
-
-            st.divider()
-
-            # ==============================================================================
-            # --- EVENTOS CORPORATIVOS ---
-            # ==============================================================================
-            st.markdown("### 📅 Calendário de Eventos Corporativos")
-            
-            ex_div_ts = info.get('exDividendDate')
-            earn_ts = info.get('earningsTimestamp', info.get('earningsTimestampStart'))
-            
-            def format_data_evento(ts):
-                if pd.isna(ts) or ts is None: 
-                    return "Não divulgado ou indisponível"
-                return datetime.fromtimestamp(ts).strftime('%d/%m/%Y')
+                with col_noticias:
+                    st.markdown("### 📰 Notícias")
+                    for n in buscar_noticias_google(ativo_buscado): 
+                        st.markdown(f"""
+                        <div style="border: 1px solid #444444; border-radius: 5px; padding: 10px; margin-bottom: 12px; background-color: #1e1e1e;">
+                            <a href="{n['link']}" target="_blank" style="color: #00BFFF; text-decoration: none; font-weight: bold; font-size: 14px;">{n['title']}</a>
+                            <p style="color: #888888; font-size: 11px; margin: 5px 0 0 0;">{n['publisher']} • {n['time']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                 
-            data_div = format_data_evento(ex_div_ts)
-            data_bal = format_data_evento(earn_ts)
-            
-            c_ev1, c_ev2, _ = st.columns([1, 1, 2])
-            with c_ev1:
-                st.info(f"🧾 **Próximo Balanço (Earnings):**\n\n{data_bal}")
-            with c_ev2:
-                st.success(f"💰 **Data Com (Dividendos):**\n\n{data_div}")
+                # --- EVENTOS ---
+                c_ev1, c_ev2 = st.columns(2)
+                
+                balanco_ts = info.get('earningsTimestamp', info.get('earningsTimestampStart', 0))
+                data_bal = datetime.fromtimestamp(balanco_ts).strftime('%d/%m/%Y') if balanco_ts else 'Indisponível'
+                
+                div_ts = info.get('exDividendDate', 0)
+                data_div = datetime.fromtimestamp(div_ts).strftime('%d/%m/%Y') if div_ts else 'Indisponível'
+                
+                c_ev1.info(f"🧾 **Próximo Balanço:** {data_bal}")
+                c_ev2.success(f"💰 **Data Com (Dividendos):** {data_div}")
