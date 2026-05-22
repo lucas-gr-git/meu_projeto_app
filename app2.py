@@ -116,19 +116,8 @@ def fmt_br(val, is_pct=False, currency=False):
         return "-"
 
 def cor_variacao(val):
-    if pd.isna(val) or val == "-": 
-        return "#2b2e35"
-        
-    try:
-        val_float = float(val)
-        if val_float > 0: 
-            return "#228B22"
-        elif val_float < 0: 
-            return "#B22222"
-        else: 
-            return "#2b2e35"
-    except:
-        return "#2b2e35"
+    if pd.isna(val) or val == "-": return "#2b2e35"
+    return "#228B22" if val > 0 else "#B22222" if val < 0 else "#2b2e35"
 
 # ==============================================================================
 # --- PROCESSAMENTO GERAL ---
