@@ -227,15 +227,24 @@ with tab_analise_individual:
                 if val_var12m != "-" and isinstance(val_var12m, float) and '52WeekChange' in info:
                     val_var12m = val_var12m * 100 if val_var12m < 1 else val_var12m
 
-                val_pl = info.get('trailingPE', "-")
+                # P/L
+                val_pl = info.get('trailingPE') or info.get('forwardPE') or "-"
+
+                # P/VP
                 val_pvp = info.get('priceToBook', "-")
-                
-                val_dy = info.get('trailingAnnualDividendYield')
-                if val_dy is None:
-                    val_dy = info.get('dividendYield', "-")
-                
-                if val_dy != "-": 
+
+                # DY - tenta calcular manualmente se vier vazio
+                val_dy = info.get('trailingAnnualDividendYield') or info.get('dividendYield')
+
+                if val_dy:
                     val_dy = val_dy * 100
+                else:
+                    # Calcula manualmente: dividendo anual / preço atual
+                    div_anual = info.get('trailingAnnualDividendRate') or info.get('dividendRate')
+                    if div_anual and preco_atual and preco_atual > 0:
+                        val_dy = (div_anual / preco_atual) * 100
+                    else:
+                        val_dy = "-"
 
                 # --- CARDS ESTILO STATUS INVEST ---
                 st.markdown(f"""
