@@ -531,40 +531,26 @@ with tab_analise_individual:
                     return fast, slow, sma3, sma8, sma20
             
                 def detectar_agulhada(fast, slow):
-                    """
-                    Agulhada REAL: as duas linhas cruzam o zero juntas
-                    Tolerância de até 2 candles entre os cruzamentos
-                    """
                     sinais = []
-                    for i in range(2, len(fast)):
-                        f_ant, f_at = fast.iloc[i-1], fast.iloc[i]
-                        s_ant, s_at = slow.iloc[i-1], slow.iloc[i]
-                        if pd.isna(f_at) or pd.isna(s_at): continue
-            
-                        # Verifica cruzamento real de cada linha
-                        fast_cruzou_cima = f_ant < 0 and f_at > 0
-                        slow_cruzou_cima = s_ant < 0 and s_at > 0
-                        fast_cruzou_baixo = f_ant > 0 and f_at < 0
-                        slow_cruzou_baixo = s_ant > 0 and s_at < 0
-            
-                        # Verifica se uma cruzou nos últimos 2 candles
-                        fast_cruzou_cima_recente  = any(fast.iloc[j-1] < 0 and fast.iloc[j] > 0 for j in range(max(1,i-2), i+1))
-                        slow_cruzou_cima_recente  = any(slow.iloc[j-1] < 0 and slow.iloc[j] > 0 for j in range(max(1,i-2), i+1))
-                        fast_cruzou_baixo_recente = any(fast.iloc[j-1] > 0 and fast.iloc[j] < 0 for j in range(max(1,i-2), i+1))
-                        slow_cruzou_baixo_recente = any(slow.iloc[j-1] > 0 and slow.iloc[j] < 0 for j in range(max(1,i-2), i+1))
-            
-                        # Agulhada de COMPRA: as DUAS cruzaram para cima juntas
-                        if fast_cruzou_cima_recente and slow_cruzou_cima_recente:
-                            # Confirma: ambas precisam estar acima de zero agora
-                            if f_at > 0 and s_at > 0:
-                                sinais.append((fast.index[i], 'COMPRA'))
-            
-                        # Agulhada de VENDA: as DUAS cruzaram para baixo juntas
-                        elif fast_cruzou_baixo_recente and slow_cruzou_baixo_recente:
-                            # Confirma: ambas precisam estar abaixo de zero agora
-                            if f_at < 0 and s_at < 0:
-                                sinais.append((fast.index[i], 'VENDA'))
-            
+                    for i in range(1, len(fast)):
+                        f_ant = fast.iloc[i-1]
+                        f_at  = fast.iloc[i]
+                        s_at  = slow.iloc[i]
+                        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant):
+                            continue
+
+                        # Agulhada de COMPRA:
+                        # Fast cruzou zero para cima E Slow ainda está abaixo
+                        # (SMA3 > SMA8 > SMA20 — agulha de compra)
+                        if f_ant < 0 and f_at > 0 and s_at < 0:
+                            sinais.append((fast.index[i], 'COMPRA'))
+
+                        # Agulhada de VENDA:
+                        # Fast cruzou zero para baixo E Slow ainda está acima
+                        # (SMA3 < SMA8 < SMA20 — agulha de venda... wait)
+                        elif f_ant > 0 and f_at < 0 and s_at > 0:
+                            sinais.append((fast.index[i], 'VENDA'))
+                
                     return sinais
             
                 # --- VARREDURA DE TODOS OS ATIVOS ---
