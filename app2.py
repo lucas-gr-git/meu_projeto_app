@@ -48,11 +48,9 @@ def buscar_noticias_google(ativo):
         nome_limpo = ativo.replace('.SA', '')
         query = urllib.parse.quote(f"{nome_limpo} ações brasil")
         url = f"https://news.google.com/rss/search?q={query}&hl=pt-BR&gl=BR&ceid=BR:pt-419"
-        
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req) as response:
             xml_data = response.read()
-            
         root = ET.fromstring(xml_data)
         noticias = []
         for item in root.findall('.//item')[:6]:
@@ -67,10 +65,10 @@ def buscar_noticias_google(ativo):
                 data_formatada = pub_date
             noticias.append({'title': titulo, 'link': link, 'publisher': fonte, 'time': data_formatada})
         return noticias
-    except Exception as e:
+    except:
         return []
 
-# FUNÇÕES AUXILIARES DE FORMATAÇÃO
+# --- FUNÇÕES AUXILIARES DE FORMATAÇÃO ---
 def fmt_br(val, is_pct=False, currency=False):
     if pd.isna(val) or val is None or val == "-": return "-"
     texto = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -82,7 +80,34 @@ def cor_variacao(val):
     if pd.isna(val) or val == "-": return "#2b2e35"
     return "#228B22" if val > 0 else "#B22222" if val < 0 else "#2b2e35"
 
-# Baixa 365 dias para garantir o cálculo das médias
+# --- FUNÇÕES DIDI AGUIAR ---
+def calcular_didi(df_close):
+    sma3  = df_close.rolling(3).mean()
+    sma8  = df_close.rolling(8).mean()
+    sma20 = df_close.rolling(20).mean()
+    fast  = sma3 - sma8
+    slow  = sma20 - sma8
+    return fast, slow, sma3, sma8, sma20
+
+def detectar_agulhada(fast, slow):
+    """
+    Agulhada de COMPRA: Fast cruza zero para cima enquanto Slow ainda está abaixo (SMA3 > SMA8 > SMA20)
+    Agulhada de VENDA:  Fast cruza zero para baixo enquanto Slow ainda está acima (SMA3 < SMA8 < SMA20)
+    """
+    sinais = []
+    for i in range(1, len(fast)):
+        f_ant = fast.iloc[i-1]
+        f_at  = fast.iloc[i]
+        s_at  = slow.iloc[i]
+        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant):
+            continue
+        if f_ant < 0 and f_at > 0 and s_at < 0:
+            sinais.append((fast.index[i], 'COMPRA'))
+        elif f_ant > 0 and f_at < 0 and s_at > 0:
+            sinais.append((fast.index[i], 'VENDA'))
+    return sinais
+
+# --- CARREGA DADOS BASE ---
 precos_fechamento, dados_completos = carregar_dados(ativos_lista, 365)
 
 # --- PROCESSAMENTO DE MÉTRICAS (PAINEL GERAL) ---
@@ -91,31 +116,24 @@ for ativo in ativos_lista:
     df = pd.DataFrame()
     if ativo in precos_fechamento.columns:
         df['Close'] = precos_fechamento[ativo]
-        
-        df['SMA50'] = df['Close'].rolling(window=50).mean()
+        df['SMA50']  = df['Close'].rolling(window=50).mean()
         df['SMA100'] = df['Close'].rolling(window=100).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
-        
         delta = df['Close'].diff()
         ganho = (delta.where(delta > 0, 0)).rolling(window=14).mean()
         perda = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
         rs = ganho / perda
         df['RSI'] = 100 - (100 / (1 + rs))
-        
         ultimo_preco = float(df['Close'].dropna().iloc[-1]) if not df['Close'].dropna().empty else 0
-        sma50 = float(df['SMA50'].dropna().iloc[-1]) if not df['SMA50'].dropna().empty else 0
+        sma50  = float(df['SMA50'].dropna().iloc[-1])  if not df['SMA50'].dropna().empty  else 0
         sma100 = float(df['SMA100'].dropna().iloc[-1]) if not df['SMA100'].dropna().empty else 0
         sma200 = float(df['SMA200'].dropna().iloc[-1]) if not df['SMA200'].dropna().empty else 0
-        rsi = float(df['RSI'].dropna().iloc[-1]) if not df['RSI'].dropna().empty else np.nan
-        
+        rsi    = float(df['RSI'].dropna().iloc[-1])    if not df['RSI'].dropna().empty    else np.nan
         variacao_diaria = float(df['Close'].dropna().pct_change().iloc[-1] * 100) if len(df['Close'].dropna()) > 1 else 0.0
-        
-        tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
+        tendencia_curta = 'Alta' if ultimo_preco > sma50  else 'Baixa'
         tendencia_media = 'Alta' if ultimo_preco > sma100 else 'Baixa'
         tendencia_longa = 'Alta' if ultimo_preco > sma200 else 'Baixa' if sma200 > 0 else 'N/A'
-            
         sentimento = 'Sobrecomprado' if rsi > 70 else 'Sobrevendido' if rsi < 30 else 'Neutro'
-
         resultados.append({
             'Ativo': ativo.replace('.SA', ''), 'Setor': ativos_setores[ativo], 'Preço (R$)': round(ultimo_preco, 2),
             'Variação (%)': round(variacao_diaria, 2), 'Tendência Curta (50D)': tendencia_curta,
@@ -124,33 +142,34 @@ for ativo in ativos_lista:
 
 df_resumo = pd.DataFrame(resultados)
 
-
 # ==============================================================================
-# --- CRIAÇÃO DAS ABAS DO SCRIPT ---
+# --- CRIAÇÃO DAS ABAS ---
 # ==============================================================================
-tab_visao_geral, tab_analise_individual, tab_agulhadas = st.tabs(["🌐 Visão Geral do Mercado", "🔬 Análise Detalhada por Ativo", "🎯 Agulhadas do Didi"])
+tab_visao_geral, tab_analise_individual, tab_agulhadas = st.tabs([
+    "🌐 Visão Geral do Mercado",
+    "🔬 Análise Detalhada por Ativo",
+    "🎯 Agulhadas do Didi"
+])
 
 # ==============================================================================
 # --- ABA 1: VISÃO GERAL DO MERCADO ---
 # ==============================================================================
 with tab_visao_geral:
     st.markdown("### 📊 Mapa de Calor do Mercado")
-    
+
     ids, labels, parents, values, colors, customdata = ["B3"], ["B3"], [""], [0], ["#2b2e35"], [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
-    
+
     for setor in df_resumo['Setor'].unique():
         ids.append(setor); labels.append(setor); parents.append("B3"); values.append(0); colors.append("#2b2e35")
         customdata.append([f"<b>Setor: {setor}</b>", f"<b>{setor}</b>"])
-        ids.append(setor + "_fantasma"); labels.append(""); parents.append(setor); values.append(0.000001); colors.append("#FFFFFF"); customdata.append(["", ""])
+        ids.append(setor + "_fantasma"); labels.append(""); parents.append(setor); values.append(0.000001); colors.append("#2b2e35"); customdata.append(["", ""])
 
     for _, row in df_resumo.iterrows():
         ids.append(row['Ativo']); labels.append(row['Ativo']); parents.append(row['Setor']); values.append(1)
         var = row['Variação (%)']; preco = row['Preço (R$)']
         colors.append("#228B22" if var > 0.05 else "#B22222" if var < -0.05 else "#708090")
-        
         preco_br = fmt_br(preco)
         var_br = f"{var:+.2f}%".replace(".", ",")
-        
         hover = f"<b>{row['Ativo']}</b><br>Variação: {var_br}<br>Preço: R$ {preco_br}<br><br>Curta: {row['Tendência Curta (50D)']}<br>Média: {row['Tendência Média (100D)']}<br>Longa: {row['Tendência Longa (200D)']}"
         block = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
         customdata.append([hover, block])
@@ -166,7 +185,6 @@ with tab_visao_geral:
     col_filtro, _ = st.columns([1, 2])
     with col_filtro:
         setor_selecionado = st.selectbox("Filtrar Tabela:", ["Todos os Setores"] + sorted(list(df_resumo['Setor'].unique())))
-    
     df_exibicao = df_resumo if setor_selecionado == "Todos os Setores" else df_resumo[df_resumo['Setor'] == setor_selecionado]
     st.dataframe(df_exibicao, use_container_width=True, hide_index=True)
 
@@ -178,11 +196,11 @@ with tab_analise_individual:
     col_busca, col_tempo = st.columns([1, 1])
     with col_busca:
         ativo_buscado = st.text_input("🔍 Digite o código do ativo (Ex: PETR4, MGLU3, AAPL):", key="search_asset").upper().strip()
-    
+
     if ativo_buscado:
         if not ativo_buscado.endswith('.SA') and any(char.isdigit() for char in ativo_buscado):
             ativo_buscado += '.SA'
-            
+
         with col_tempo:
             janela_tempo = st.radio("Período do Gráfico:", ["1 Mês", "6 Meses", "1 Ano", "2 Anos", "5 Anos"], index=2, horizontal=True)
             mapa_periodos = {"1 Mês": "1mo", "6 Meses": "6mo", "1 Ano": "1y", "2 Anos": "2y", "5 Anos": "5y"}
@@ -190,37 +208,33 @@ with tab_analise_individual:
 
         with st.spinner("Processando histórico de 10 anos e fundamentos..."):
             ticker_obj = yf.Ticker(ativo_buscado)
-            
-            # Baixando histórico gigante para a Rentabilidade (10 Anos)
             df_hist = yf.download(ativo_buscado, period="10y")
-            
+
             if df_hist.empty:
                 st.error("⚠️ Código não encontrado no banco de dados.")
             else:
                 if isinstance(df_hist.columns, pd.MultiIndex):
                     df_hist.columns = df_hist.columns.droplevel(1)
 
-                # --- CÁLCULO DAS RENTABILIDADES HISTÓRICAS ---
                 preco_atual = float(df_hist['Close'].iloc[-1])
-                
+
                 def calc_retorno(df, dias_uteis):
                     if len(df) > dias_uteis:
                         preco_antigo = float(df['Close'].iloc[-dias_uteis])
                         return ((preco_atual / preco_antigo) - 1) * 100
                     return "-"
 
-                ret_1m = calc_retorno(df_hist, 21)
-                ret_3m = calc_retorno(df_hist, 63)
-                ret_1a = calc_retorno(df_hist, 252)
-                ret_2a = calc_retorno(df_hist, 504)
-                ret_5a = calc_retorno(df_hist, 1260)
+                ret_1m  = calc_retorno(df_hist, 21)
+                ret_3m  = calc_retorno(df_hist, 63)
+                ret_1a  = calc_retorno(df_hist, 252)
+                ret_2a  = calc_retorno(df_hist, 504)
+                ret_5a  = calc_retorno(df_hist, 1260)
                 ret_10a = calc_retorno(df_hist, 2520)
 
-                # --- BUSCA FUNDAMENTALISTA ---
                 info = {}
-                try: 
+                try:
                     info = ticker_obj.info
-                except: 
+                except:
                     pass
 
                 val_var12m = ret_1a if ret_1a != "-" else info.get('52WeekChange', "-")
@@ -233,20 +247,18 @@ with tab_analise_individual:
                 # P/VP
                 val_pvp = info.get('priceToBook', "-")
 
-                # DY - tenta calcular manualmente se vier vazio
+                # DY
                 val_dy = info.get('trailingAnnualDividendYield') or info.get('dividendYield')
-
                 if val_dy:
                     val_dy = val_dy * 100
                 else:
-                    # Calcula manualmente: dividendo anual / preço atual
                     div_anual = info.get('trailingAnnualDividendRate') or info.get('dividendRate')
                     if div_anual and preco_atual and preco_atual > 0:
                         val_dy = (div_anual / preco_atual) * 100
                     else:
                         val_dy = "-"
 
-                # --- CARDS ESTILO STATUS INVEST ---
+                # --- CARDS ---
                 st.markdown(f"""
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                     <div style="flex: 1; background-color: #1e1e1e; border: 1px solid #333; border-radius: 8px; text-align: center; overflow: hidden;">
@@ -272,7 +284,7 @@ with tab_analise_individual:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # --- TABELA DE RENTABILIDADE HISTÓRICA ---
+                # --- TABELA DE RENTABILIDADE ---
                 st.markdown(f"""
                 <div style="border: 1px solid #333; border-radius: 8px; background-color: #1e1e1e; padding: 15px; margin-bottom: 15px;">
                     <div style="font-weight: bold; margin-bottom: 15px; color: white;">📈 Rentabilidade Histórica</div>
@@ -309,79 +321,70 @@ with tab_analise_individual:
                 )
                 st.markdown("<br>", unsafe_allow_html=True)
 
-                # --- CÁLCULOS TÉCNICOS NO HISTÓRICO COMPLETO ---
-                df_hist['SMA50'] = df_hist['Close'].rolling(window=50).mean()
+                # --- CÁLCULOS TÉCNICOS ---
+                df_hist['SMA50']  = df_hist['Close'].rolling(window=50).mean()
                 df_hist['SMA100'] = df_hist['Close'].rolling(window=100).mean()
                 df_hist['SMA200'] = df_hist['Close'].rolling(window=200).mean()
-                
-                sma3 = df_hist['Close'].rolling(window=3).mean()
-                sma8 = df_hist['Close'].rolling(window=8).mean()
-                sma20_didi = df_hist['Close'].rolling(window=20).mean()
-                df_hist['DidiFast'] = sma3 - sma8
-                df_hist['DidiSlow'] = sma20_didi - sma8
-                
-                tr1 = df_hist['High'] - df_hist['Low']
-                tr2 = (df_hist['High'] - df_hist['Close'].shift(1)).abs()
-                tr3 = (df_hist['Low'] - df_hist['Close'].shift(1)).abs()
-                tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-                
-                up_m = df_hist['High'] - df_hist['High'].shift(1)
-                dn_m = df_hist['Low'].shift(1) - df_hist['Low']
-                pos_dm = pd.Series(np.where((up_m > dn_m) & (up_m > 0), up_m, 0), index=df_hist.index)
-                neg_dm = pd.Series(np.where((dn_m > up_m) & (dn_m > 0), dn_m, 0), index=df_hist.index)
-                
-                tr8 = tr.rolling(8).sum()
-                df_hist['PDI'] = 100 * pos_dm.rolling(8).sum() / tr8
-                df_hist['NDI'] = 100 * neg_dm.rolling(8).sum() / tr8
-                df_hist['ADX'] = (100 * (np.abs(df_hist['PDI'] - df_hist['NDI']) / (df_hist['PDI'] + df_hist['NDI']))).rolling(window=8).mean()
 
-                # --- CORTE DE DADOS PARA EXIBIÇÃO NO GRÁFICO ---
-                limite_data = datetime.now() - (timedelta(days=30) if janela_tempo == "1 Mês" else timedelta(days=180) if janela_tempo == "6 Meses" else timedelta(days=365) if janela_tempo == "1 Ano" else timedelta(days=730) if janela_tempo == "2 Anos" else timedelta(days=1825))
+                sma3_h      = df_hist['Close'].rolling(window=3).mean()
+                sma8_h      = df_hist['Close'].rolling(window=8).mean()
+                sma20_didi  = df_hist['Close'].rolling(window=20).mean()
+                df_hist['DidiFast'] = sma3_h - sma8_h
+                df_hist['DidiSlow'] = sma20_didi - sma8_h
+
+                # --- CORTE DE DADOS PARA EXIBIÇÃO ---
+                limite_data = datetime.now() - (
+                    timedelta(days=30)   if janela_tempo == "1 Mês"   else
+                    timedelta(days=180)  if janela_tempo == "6 Meses" else
+                    timedelta(days=365)  if janela_tempo == "1 Ano"   else
+                    timedelta(days=730)  if janela_tempo == "2 Anos"  else
+                    timedelta(days=1825)
+                )
                 df_plot = df_hist[df_hist.index >= limite_data].copy()
-                
-                cores_volume = ['#228B22' if r.Close >= r.Open else '#B22222' for r in df_plot.itertuples()]
-                cores_didi_bg = ['rgba(0, 150, 0, 0.12)' if p > n else 'rgba(200, 0, 0, 0.12)' for p, n in zip(df_plot['PDI'], df_plot['NDI'])]
 
-                # --- LAYOUT: GRÁFICOS VS NOTÍCIAS ---
+                cores_volume   = ['#228B22' if r.Close >= r.Open else '#B22222' for r in df_plot.itertuples()]
+                cores_didi_bg  = ['rgba(0, 150, 0, 0.12)' if p > n else 'rgba(200, 0, 0, 0.12)'
+                                  for p, n in zip(df_plot['DidiFast'], df_plot['DidiSlow'])]
+
+                # --- LAYOUT: GRÁFICOS + NOTÍCIAS ---
                 col_graficos, col_noticias = st.columns([3, 1])
 
                 with col_graficos:
                     fig_plotly = make_subplots(
-                        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.6, 0.20, 0.20],
-                        specs=[[{"secondary_y": True}], [{"secondary_y": False}], [{"secondary_y": False}]],
-                        subplot_titles=('Gráfico de Preço e Volume', 'Didi Plus (3, 8, 20)', 'DMI / ADX (8)')
+                        rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.03, row_heights=[0.75, 0.25],
+                        specs=[[{"secondary_y": True}], [{"secondary_y": False}]],
+                        subplot_titles=('Gráfico de Preço e Volume', 'Didi Plus (3, 8, 20)')
                     )
-                    
+
                     fig_plotly.add_trace(go.Candlestick(
-                        x=df_plot.index, open=df_plot['Open'], high=df_plot['High'], low=df_plot['Low'], close=df_plot['Close'], name='Candlestick'
+                        x=df_plot.index, open=df_plot['Open'], high=df_plot['High'],
+                        low=df_plot['Low'], close=df_plot['Close'], name='Candlestick'
                     ), row=1, col=1, secondary_y=False)
-                    
-                    for m, c in zip(['SMA50','SMA100','SMA200'], ['#00BFFF', '#BA55D3', 'white']):
-                        fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot[m], mode='lines', name=f'Média {m.replace("SMA","")}', line=dict(color=c, width=1.5)), row=1, col=1, secondary_y=False)
-                    
+
+                    for m, c in zip(['SMA50', 'SMA100', 'SMA200'], ['#00BFFF', '#BA55D3', 'white']):
+                        fig_plotly.add_trace(go.Scatter(
+                            x=df_plot.index, y=df_plot[m], mode='lines',
+                            name=f'Média {m.replace("SMA","")}', line=dict(color=c, width=1.5)
+                        ), row=1, col=1, secondary_y=False)
+
                     fig_plotly.add_trace(go.Bar(
-                        x=df_plot.index, y=df_plot['Volume'], name='Volume', marker_color=cores_volume, opacity=0.35
+                        x=df_plot.index, y=df_plot['Volume'], name='Volume',
+                        marker_color=cores_volume, opacity=0.35
                     ), row=1, col=1, secondary_y=True)
-                    
+
                     max_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
                     if pd.isna(max_y_didi) or max_y_didi == 0: max_y_didi = 1
-                    
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[max_y_didi] * len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[-max_y_didi] * len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
-                    
+
+                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[max_y_didi]*len(df_plot),  marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
+                    fig_plotly.add_trace(go.Bar(x=df_plot.index, y=[-max_y_didi]*len(df_plot), marker_color=cores_didi_bg, marker_line_width=0, showlegend=False, hoverinfo='skip'), row=2, col=1)
                     fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=np.zeros(len(df_plot)), mode='lines', name='Didi Normal', line=dict(color='white', width=1, dash='dot')), row=2, col=1)
                     fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiSlow'], mode='lines', name='Didi Lenta (20)', line=dict(color='#FFD700', width=2)), row=2, col=1)
                     fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['DidiFast'], mode='lines', name='Didi Rápida (3)', line=dict(color='#00BFFF', width=2)), row=2, col=1)
-                    
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['ADX'], mode='lines', name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['PDI'], mode='lines', name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
-                    fig_plotly.add_trace(go.Scatter(x=df_plot.index, y=df_plot['NDI'], mode='lines', name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
 
                     fig_plotly.update_yaxes(title_text="Preço (R$)", side="right", row=1, col=1, secondary_y=False)
                     fig_plotly.update_yaxes(showgrid=False, showticklabels=False, range=[0, df_plot['Volume'].max() * 4], row=1, col=1, secondary_y=True)
-                    
                     fig_plotly.update_layout(
-                        template='plotly_dark', height=900, showlegend=True,
+                        template='plotly_dark', height=800, showlegend=True,
                         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                         barmode='relative'
                     )
@@ -391,7 +394,6 @@ with tab_analise_individual:
                 with col_noticias:
                     st.markdown("### 📰 Notícias Recentes")
                     noticias = buscar_noticias_google(ativo_buscado)
-                    
                     if not noticias:
                         st.info("Nenhuma notícia recente encontrada para este ativo.")
                     else:
@@ -405,39 +407,32 @@ with tab_analise_individual:
 
             st.divider()
 
-            # ==============================================================================
-            # --- BENCHMARK IBOVESPA E OUTROS ÍNDICES (MULTILINE) ---
-            # ==============================================================================
-            st.markdown(f"### 📊 Comparativo de Desempenho e Benchmarks")
-            
+            # --- BENCHMARK ---
+            st.markdown("### 📊 Comparativo de Desempenho e Benchmarks")
             benchmarks_selecionados = ['IBOV', 'IFIX', 'SMLL', 'IDIV', 'IVVB11', 'CDI', 'IPCA']
 
             with st.spinner("Calculando Benchmarks e normalizando as escalas..."):
                 fig_bench = go.Figure()
 
-                # 1. Plota o Ativo Principal Normalizado
                 if not df_plot.empty:
                     primeiro_preco_ativo = float(df_plot['Close'].iloc[0])
                     ativo_norm = (df_plot['Close'] / primeiro_preco_ativo - 1) * 100
                     fig_bench.add_trace(go.Scatter(x=ativo_norm.index, y=ativo_norm, mode='lines', name=ativo_buscado, line=dict(color='#00BFFF', width=2.5)))
 
-                # 2. Configuração dos Benchmarks
                 mapa_yf = {
-                    'IBOV': '^BVSP', 'IFIX': 'XFIX11.SA', 'SMLL': 'SMAL11.SA', 
+                    'IBOV': '^BVSP', 'IFIX': 'XFIX11.SA', 'SMLL': 'SMAL11.SA',
                     'IDIV': 'DIVO11.SA', 'IVVB11': 'IVVB11.SA'
                 }
                 cores_bench = {
-                    'IBOV': 'white', 'IFIX': '#32CD32', 'SMLL': '#FFD700', 
+                    'IBOV': 'white', 'IFIX': '#32CD32', 'SMLL': '#FFD700',
                     'IDIV': '#FF69B4', 'IVVB11': '#FFA500', 'CDI': '#87CEFA', 'IPCA': '#FF6347'
                 }
 
-                data_inicio_yf = limite_data.strftime('%Y-%m-%d')
+                data_inicio_yf  = limite_data.strftime('%Y-%m-%d')
                 data_inicio_bcb = limite_data.strftime('%d/%m/%Y')
 
                 for b in benchmarks_selecionados:
                     cor = cores_bench.get(b, 'white')
-
-                    # BUSCA NO YAHOO FINANCE (ETFs e Índices)
                     if b in mapa_yf:
                         df_b = yf.download(mapa_yf[b], start=data_inicio_yf)
                         if not df_b.empty:
@@ -446,10 +441,8 @@ with tab_analise_individual:
                             df_b_plot = df_b[df_b.index >= limite_data]
                             if not df_b_plot.empty:
                                 p_preco = float(df_b_plot['Close'].iloc[0])
-                                b_norm = (df_b_plot['Close'] / p_preco - 1) * 100
-                                fig_bench.add_trace(go.Scatter(x=b_norm.index, y=b_norm, mode='lines', name=b, line=dict(color=cor, width=1.5, dash='dot' if b=='IBOV' else 'solid')))
-
-                    # BUSCA NO BANCO CENTRAL DO BRASIL (CDI - SGS 12)
+                                b_norm  = (df_b_plot['Close'] / p_preco - 1) * 100
+                                fig_bench.add_trace(go.Scatter(x=b_norm.index, y=b_norm, mode='lines', name=b, line=dict(color=cor, width=1.5, dash='dot' if b == 'IBOV' else 'solid')))
                     elif b == 'CDI':
                         url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial={data_inicio_bcb}"
                         try:
@@ -463,8 +456,6 @@ with tab_analise_individual:
                             cdi_acumulado = ((1 + df_cdi['valor'] / 100).cumprod() - 1) * 100
                             fig_bench.add_trace(go.Scatter(x=cdi_acumulado.index, y=cdi_acumulado, mode='lines', name='CDI', line=dict(color=cor, width=1.5)))
                         except: pass
-
-                    # BUSCA NO BANCO CENTRAL DO BRASIL (IPCA - SGS 433)
                     elif b == 'IPCA':
                         url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados?formato=json&dataInicial={data_inicio_bcb}"
                         try:
@@ -476,7 +467,6 @@ with tab_analise_individual:
                             df_ipca.set_index('data', inplace=True)
                             df_ipca['valor'] = df_ipca['valor'].astype(float)
                             ipca_acumulado = ((1 + df_ipca['valor'] / 100).cumprod() - 1) * 100
-                            # Preenche os dias vazios do mês mantendo o valor contínuo na tela
                             idx = pd.date_range(start=ipca_acumulado.index[0], end=datetime.today())
                             ipca_acumulado = ipca_acumulado.reindex(idx, method='ffill')
                             fig_bench.add_trace(go.Scatter(x=ipca_acumulado.index, y=ipca_acumulado, mode='lines', name='IPCA', line=dict(color=cor, width=1.5)))
@@ -491,235 +481,247 @@ with tab_analise_individual:
 
             st.divider()
 
-            # ==============================================================================
             # --- EVENTOS CORPORATIVOS ---
-            # ==============================================================================
             st.markdown("### 📅 Calendário de Eventos Corporativos")
-            
-            ex_div_ts = info.get('exDividendDate')
-            earn_ts = info.get('earningsTimestamp', info.get('earningsTimestampStart'))
-            
-            def format_data_evento(ts):
-                if pd.isna(ts) or ts is None: 
-                    return "Não divulgado ou indisponível"
-                return datetime.fromtimestamp(ts).strftime('%d/%m/%Y')
-                
-            data_div = format_data_evento(ex_div_ts)
-            data_bal = format_data_evento(earn_ts)
-            
-            c_ev1, c_ev2, _ = st.columns([1, 1, 2])
+
+            codigo_limpo = ativo_buscado.replace('.SA', '')
+
+            def buscar_dividendos_yf(ticker_obj_local):
+                try:
+                    dividendos = ticker_obj_local.dividends
+                    if dividendos.empty:
+                        return None, None, None, None
+                    dividendos.index = dividendos.index.tz_localize(None)
+                    ultimo     = dividendos.iloc[-1]
+                    data_com   = dividendos.index[-1].strftime('%d/%m/%Y')
+                    valor      = f"R$ {ultimo:,.4f}".replace(',','X').replace('.', ',').replace('X','.')
+                    return 'Dividendo/JCP', data_com, "—", valor
+                except:
+                    return None, None, None, None
+
+            def buscar_historico_proventos_yf(ticker_obj_local):
+                try:
+                    dividendos = ticker_obj_local.dividends
+                    if dividendos.empty:
+                        return pd.DataFrame()
+                    dividendos.index = dividendos.index.tz_localize(None)
+                    df_prov = dividendos.reset_index()
+                    df_prov.columns = ['Data Com', 'Valor (R$)']
+                    df_prov['Data Com']   = pd.to_datetime(df_prov['Data Com']).dt.strftime('%d/%m/%Y')
+                    df_prov['Valor (R$)'] = df_prov['Valor (R$)'].apply(lambda x: f"R$ {x:,.4f}".replace(',','X').replace('.', ',').replace('X','.'))
+                    df_prov['Tipo'] = 'Dividendo/JCP'
+                    return df_prov[['Tipo','Data Com','Valor (R$)']].iloc[::-1].reset_index(drop=True)
+                except:
+                    return pd.DataFrame()
+
+            with st.spinner("Buscando eventos..."):
+                tipo_div, data_com_b3, data_pgto, valor_div = buscar_dividendos_yf(ticker_obj)
+
+            c_ev1, c_ev2, c_ev3 = st.columns(3)
             with c_ev1:
-                st.info(f"🧾 **Próximo Balanço (Earnings):**\n\n{data_bal}")
+                st.markdown(f"""
+                <div style="border:1px solid #333; border-radius:8px; background:#1e1e1e; overflow:hidden;">
+                    <div style="background:#2b2e35; color:#d4af37; padding:8px; font-weight:bold; font-size:13px;">📅 Tipo de Provento</div>
+                    <div style="padding:15px; color:white; font-size:18px; font-weight:bold;">{tipo_div or "—"}</div>
+                    <div style="padding:0 15px 10px; color:#888; font-size:12px;">Fonte: Yahoo Finance</div>
+                </div>""", unsafe_allow_html=True)
             with c_ev2:
-                st.success(f"💰 **Data Com (Dividendos):**\n\n{data_div}")
+                st.markdown(f"""
+                <div style="border:1px solid #333; border-radius:8px; background:#1e1e1e; overflow:hidden;">
+                    <div style="background:#2b2e35; color:#d4af37; padding:8px; font-weight:bold; font-size:13px;">💰 Data Com (Último Evento)</div>
+                    <div style="padding:15px; color:#32CD32; font-size:18px; font-weight:bold;">{data_com_b3 or "Não disponível"}</div>
+                    <div style="padding:0 15px 10px; color:#888; font-size:12px;">Valor: {valor_div or "—"}</div>
+                </div>""", unsafe_allow_html=True)
+            with c_ev3:
+                st.markdown(f"""
+                <div style="border:1px solid #333; border-radius:8px; background:#1e1e1e; overflow:hidden;">
+                    <div style="background:#2b2e35; color:#d4af37; padding:8px; font-weight:bold; font-size:13px;">🏦 Data de Pagamento</div>
+                    <div style="padding:15px; color:#00BFFF; font-size:18px; font-weight:bold;">{data_pgto or "Não disponível"}</div>
+                    <div style="padding:0 15px 10px; color:#888; font-size:12px;">Fonte: Yahoo Finance</div>
+                </div>""", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### 📋 Histórico de Proventos")
+            df_proventos = buscar_historico_proventos_yf(ticker_obj)
+            if not df_proventos.empty:
+                st.dataframe(df_proventos, use_container_width=True, hide_index=True)
+            else:
+                st.info("Nenhum provento encontrado para este ativo.")
 
 
-            # ==============================================================================
-            # --- ABA 3: AGULHADAS DO DIDI ---
-            # ==============================================================================
-            with tab_agulhadas:
-                st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
-                st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
-            
-                # --- FUNÇÕES DE DETECÇÃO ---
-                def calcular_didi(df_close):
-                    sma3  = df_close.rolling(3).mean()
-                    sma8  = df_close.rolling(8).mean()
-                    sma20 = df_close.rolling(20).mean()
-                    fast  = sma3 - sma8
-                    slow  = sma20 - sma8
-                    return fast, slow, sma3, sma8, sma20
-            
-                def detectar_agulhada(fast, slow):
-                    sinais = []
-                    for i in range(1, len(fast)):
-                        f_ant = fast.iloc[i-1]
-                        f_at  = fast.iloc[i]
-                        s_at  = slow.iloc[i]
-                        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant):
-                            continue
+# ==============================================================================
+# --- ABA 3: AGULHADAS DO DIDI ---
+# ==============================================================================
+with tab_agulhadas:
+    st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
+    st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
 
-                        # Agulhada de COMPRA:
-                        # Fast cruzou zero para cima E Slow ainda está abaixo
-                        # (SMA3 > SMA8 > SMA20 — agulha de compra)
-                        if f_ant < 0 and f_at > 0 and s_at < 0:
-                            sinais.append((fast.index[i], 'COMPRA'))
+    col_cfg1, _ = st.columns([1, 2])
+    with col_cfg1:
+        dias_scanner = st.selectbox("Período da varredura:", [30, 60, 90, 180], index=1, format_func=lambda x: f"Últimos {x} dias")
 
-                        # Agulhada de VENDA:
-                        # Fast cruzou zero para baixo E Slow ainda está acima
-                        # (SMA3 < SMA8 < SMA20 — agulha de venda... wait)
-                        elif f_ant > 0 and f_at < 0 and s_at > 0:
-                            sinais.append((fast.index[i], 'VENDA'))
-                
-                    return sinais
-            
-                # --- VARREDURA DE TODOS OS ATIVOS ---
-                col_cfg1, col_cfg2 = st.columns([1, 2])
-                with col_cfg1:
-                    dias_scanner = st.selectbox("Período da varredura:", [30, 60, 90, 180], index=1, format_func=lambda x: f"Últimos {x} dias")
-            
-                with st.spinner("🔍 Varrendo todos os ativos em busca de agulhadas..."):
-                    resultados_agulhada = []
-            
-                    for ativo in ativos_lista:
-                        if ativo not in precos_fechamento.columns:
-                            continue
-                        serie = precos_fechamento[ativo].dropna()
-                        if len(serie) < 30:
-                            continue
-            
-                        fast, slow, sma3, sma8, sma20 = calcular_didi(serie)
-                        sinais = detectar_agulhada(fast, slow)
-            
-                        # Filtra pelos últimos N dias
-                        corte = pd.Timestamp.now() - pd.Timedelta(days=dias_scanner)
-                        sinais_recentes = [(d, t) for d, t in sinais if d >= corte]
-            
-                        if sinais_recentes:
-                            ultimo_sinal_data, ultimo_sinal_tipo = sinais_recentes[-1]
-                            dias_atras = (pd.Timestamp.now() - ultimo_sinal_data).days
-                            preco_sinal = float(serie[serie.index >= ultimo_sinal_data].iloc[0]) if not serie[serie.index >= ultimo_sinal_data].empty else 0
-                            preco_atual_ag = float(serie.iloc[-1])
-                            retorno = ((preco_atual_ag / preco_sinal) - 1) * 100 if preco_sinal > 0 else 0
-            
-                            resultados_agulhada.append({
-                                'Ativo': ativo.replace('.SA',''),
-                                'Setor': ativos_setores[ativo],
-                                'Sinal': ultimo_sinal_tipo,
-                                'Data do Sinal': ultimo_sinal_data.strftime('%d/%m/%Y'),
-                                'Dias Atrás': dias_atras,
-                                'Preço no Sinal (R$)': round(preco_sinal, 2),
-                                'Preço Atual (R$)': round(preco_atual_ag, 2),
-                                'Retorno desde Sinal (%)': round(retorno, 2),
-                                'Total de Sinais': len(sinais_recentes)
-                            })
-            
-                df_agulhadas = pd.DataFrame(resultados_agulhada)
-            
-                if df_agulhadas.empty:
-                    st.warning("Nenhuma agulhada encontrada no período selecionado.")
-                else:
-                    # --- MÉTRICAS RESUMO ---
-                    total_compra = len(df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'])
-                    total_venda  = len(df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'])
-            
-                    m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("📊 Ativos com Sinal", len(df_agulhadas))
-                    m2.metric("🟢 Agulhadas de Compra", total_compra)
-                    m3.metric("🔴 Agulhadas de Venda", total_venda)
-                    m4.metric("⚖️ Saldo (C - V)", total_compra - total_venda)
-            
-                    st.markdown("<br>", unsafe_allow_html=True)
-            
-                    # --- TABELA COM CORES ---
-                    compras = df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'].sort_values('Dias Atrás')
-                    vendas  = df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'].sort_values('Dias Atrás')
-            
-                    col_t1, col_t2 = st.columns(2)
-                    with col_t1:
-                        st.markdown("#### 🟢 Agulhadas de Compra")
-                        if not compras.empty:
-                            st.dataframe(
-                                compras[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']],
-                                use_container_width=True, hide_index=True
-                            )
-                        else:
-                            st.info("Nenhuma agulhada de compra no período.")
-            
-                    with col_t2:
-                        st.markdown("#### 🔴 Agulhadas de Venda")
-                        if not vendas.empty:
-                            st.dataframe(
-                                vendas[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']],
-                                use_container_width=True, hide_index=True
-                            )
-                        else:
-                            st.info("Nenhuma agulhada de venda no período.")
-            
-                    st.divider()
-            
-                    # --- GRÁFICO INDIVIDUAL ---
-                    st.markdown("### 🔬 Análise Individual do Sinal")
-                    ativos_com_sinal = df_agulhadas['Ativo'].tolist()
-                    ativo_ag = st.selectbox("Selecione o ativo para ver o gráfico com os sinais:", ativos_com_sinal)
-            
-                    if ativo_ag:
-                        ativo_ag_full = ativo_ag + '.SA'
-                        df_ag_hist = yf.download(ativo_ag_full, period="1y")
-            
-                        if not df_ag_hist.empty:
-                            if isinstance(df_ag_hist.columns, pd.MultiIndex):
-                                df_ag_hist.columns = df_ag_hist.columns.droplevel(1)
-            
-                            fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag = calcular_didi(df_ag_hist['Close'])
-                            sinais_ag = detectar_agulhada(fast_ag, slow_ag)
-            
-                            fig_ag = make_subplots(
-                                rows=2, cols=1, shared_xaxes=True,
-                                vertical_spacing=0.05, row_heights=[0.65, 0.35],
-                                subplot_titles=(f'Preço {ativo_ag} com Agulhadas', 'Didi Index (Fast e Slow)')
-                            )
-            
-                            # Candlestick
-                            fig_ag.add_trace(go.Candlestick(
-                                x=df_ag_hist.index,
-                                open=df_ag_hist['Open'], high=df_ag_hist['High'],
-                                low=df_ag_hist['Low'], close=df_ag_hist['Close'],
-                                name='Preço', increasing_line_color='#228B22', decreasing_line_color='#B22222'
-                            ), row=1, col=1)
-            
-                            # Médias
-                            for s, c, n in zip([sma3_ag, sma8_ag, sma20_ag],
-                                               ['#00BFFF', '#FFD700', '#FF69B4'],
-                                               ['SMA3', 'SMA8', 'SMA20']):
-                                fig_ag.add_trace(go.Scatter(
-                                    x=df_ag_hist.index, y=s, mode='lines',
-                                    name=n, line=dict(color=c, width=1.2)
-                                ), row=1, col=1)
-            
-                            # Sinais no gráfico de preço
-                            for data_s, tipo_s in sinais_ag:
-                                if data_s not in df_ag_hist.index: continue
-                                preco_s = float(df_ag_hist.loc[data_s, 'Low']) if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
-                                cor_s   = '#00FF00' if tipo_s == 'COMPRA' else '#FF0000'
-                                simbolo = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
-                                fig_ag.add_trace(go.Scatter(
-                                    x=[data_s], y=[preco_s],
-                                    mode='markers',
-                                    marker=dict(symbol=simbolo, size=14, color=cor_s, line=dict(color='white', width=1)),
-                                    name=f'Agulhada {tipo_s}',
-                                    showlegend=True
-                                ), row=1, col=1)
-            
-                            # Didi lines no painel inferior
-                            fig_ag.add_trace(go.Scatter(
-                                x=df_ag_hist.index, y=fast_ag, mode='lines',
-                                name='Didi Rápida (3)', line=dict(color='#00BFFF', width=1.5)
-                            ), row=2, col=1)
-                            fig_ag.add_trace(go.Scatter(
-                                x=df_ag_hist.index, y=slow_ag, mode='lines',
-                                name='Didi Lenta (20)', line=dict(color='#FFD700', width=1.5)
-                            ), row=2, col=1)
-                            fig_ag.add_hline(y=0, line=dict(color='white', dash='dot', width=1), row=2, col=1)
-            
-                            fig_ag.update_layout(
-                                template='plotly_dark', height=750,
-                                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                            )
-                            fig_ag.update_xaxes(rangeslider_visible=False)
-                            st.plotly_chart(fig_ag, use_container_width=True)
-            
-                # --- LEGENDA DO MÉTODO ---
-                with st.expander("📖 Como funciona o método Didi Aguiar?"):
-                    st.markdown("""
-                    **O Índice Didi** usa 3 médias móveis simples como referência central a SMA8:
-                    
-                    - **Didi Rápida** = SMA3 − SMA8  
-                    - **Didi Lenta** = SMA20 − SMA8  
-                    
-                    **🟢 Agulhada de Compra:** as duas linhas cruzam a linha zero de baixo para cima **simultaneamente** — indica início de tendência de alta.
-                    
-                    **🔴 Agulhada de Venda:** as duas linhas cruzam a linha zero de cima para baixo **simultaneamente** — indica início de tendência de baixa.
-                    
-                    > ⚠️ Este scanner é uma **ferramenta de apoio**. Sempre confirme o sinal com outros indicadores antes de operar.
-                    """)
+    with st.spinner("🔍 Varrendo todos os ativos em busca de agulhadas..."):
+        resultados_agulhada = []
+        for ativo in ativos_lista:
+            if ativo not in precos_fechamento.columns:
+                continue
+            serie = precos_fechamento[ativo].dropna()
+            if len(serie) < 30:
+                continue
+            fast, slow, sma3, sma8, sma20 = calcular_didi(serie)
+            sinais = detectar_agulhada(fast, slow)
+            corte  = pd.Timestamp.now() - pd.Timedelta(days=dias_scanner)
+            sinais_recentes = [(d, t) for d, t in sinais if d >= corte]
+            if sinais_recentes:
+                ultimo_sinal_data, ultimo_sinal_tipo = sinais_recentes[-1]
+                dias_atras   = (pd.Timestamp.now() - ultimo_sinal_data).days
+                serie_apos   = serie[serie.index >= ultimo_sinal_data]
+                preco_sinal  = float(serie_apos.iloc[0]) if not serie_apos.empty else 0
+                preco_atual_ag = float(serie.iloc[-1])
+                retorno = ((preco_atual_ag / preco_sinal) - 1) * 100 if preco_sinal > 0 else 0
+                resultados_agulhada.append({
+                    'Ativo': ativo.replace('.SA',''),
+                    'Setor': ativos_setores[ativo],
+                    'Sinal': ultimo_sinal_tipo,
+                    'Data do Sinal': ultimo_sinal_data.strftime('%d/%m/%Y'),
+                    'Dias Atrás': dias_atras,
+                    'Preço no Sinal (R$)': round(preco_sinal, 2),
+                    'Preço Atual (R$)': round(preco_atual_ag, 2),
+                    'Retorno desde Sinal (%)': round(retorno, 2),
+                    'Total de Sinais': len(sinais_recentes)
+                })
+
+    df_agulhadas = pd.DataFrame(resultados_agulhada)
+
+    if df_agulhadas.empty:
+        st.warning("Nenhuma agulhada encontrada no período selecionado.")
+    else:
+        total_compra = len(df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'])
+        total_venda  = len(df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'])
+
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("📊 Ativos com Sinal", len(df_agulhadas))
+        m2.metric("🟢 Agulhadas de Compra", total_compra)
+        m3.metric("🔴 Agulhadas de Venda", total_venda)
+        m4.metric("⚖️ Saldo (C - V)", total_compra - total_venda)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        compras = df_agulhadas[df_agulhadas['Sinal'] == 'COMPRA'].sort_values('Dias Atrás')
+        vendas  = df_agulhadas[df_agulhadas['Sinal'] == 'VENDA'].sort_values('Dias Atrás')
+
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            st.markdown("#### 🟢 Agulhadas de Compra")
+            if not compras.empty:
+                st.dataframe(compras[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']], use_container_width=True, hide_index=True)
+            else:
+                st.info("Nenhuma agulhada de compra no período.")
+        with col_t2:
+            st.markdown("#### 🔴 Agulhadas de Venda")
+            if not vendas.empty:
+                st.dataframe(vendas[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']], use_container_width=True, hide_index=True)
+            else:
+                st.info("Nenhuma agulhada de venda no período.")
+
+        st.divider()
+
+        # --- GRÁFICO INDIVIDUAL ---
+        st.markdown("### 🔬 Análise Individual do Sinal")
+        ativos_com_sinal = df_agulhadas['Ativo'].tolist()
+        ativo_ag = st.selectbox("Selecione o ativo para ver o gráfico com os sinais:", ativos_com_sinal)
+
+        if ativo_ag:
+            ativo_ag_full = ativo_ag + '.SA'
+            df_ag_hist = yf.download(ativo_ag_full, period="1y")
+
+            if not df_ag_hist.empty:
+                if isinstance(df_ag_hist.columns, pd.MultiIndex):
+                    df_ag_hist.columns = df_ag_hist.columns.droplevel(1)
+
+                fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag = calcular_didi(df_ag_hist['Close'])
+                sinais_ag = detectar_agulhada(fast_ag, slow_ag)
+
+                fig_ag = make_subplots(
+                    rows=3, cols=1, shared_xaxes=True,
+                    vertical_spacing=0.04, row_heights=[0.55, 0.25, 0.20],
+                    subplot_titles=(f'Preço {ativo_ag} com Agulhadas', 'Didi Index (Fast e Slow)', 'DMI / ADX (8)')
+                )
+
+                # Candlestick
+                fig_ag.add_trace(go.Candlestick(
+                    x=df_ag_hist.index,
+                    open=df_ag_hist['Open'], high=df_ag_hist['High'],
+                    low=df_ag_hist['Low'],  close=df_ag_hist['Close'],
+                    name='Preço', increasing_line_color='#228B22', decreasing_line_color='#B22222'
+                ), row=1, col=1)
+
+                # Médias
+                for s, c, n in zip([sma3_ag, sma8_ag, sma20_ag],
+                                   ['#00BFFF', '#FFD700', '#FF69B4'],
+                                   ['SMA3', 'SMA8', 'SMA20']):
+                    fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=s, mode='lines', name=n, line=dict(color=c, width=1.2)), row=1, col=1)
+
+                # Sinais no gráfico
+                for data_s, tipo_s in sinais_ag:
+                    if data_s not in df_ag_hist.index: continue
+                    preco_s = float(df_ag_hist.loc[data_s, 'Low'])  if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
+                    cor_s   = '#00FF00' if tipo_s == 'COMPRA' else '#FF0000'
+                    simbolo = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
+                    fig_ag.add_trace(go.Scatter(
+                        x=[data_s], y=[preco_s], mode='markers',
+                        marker=dict(symbol=simbolo, size=14, color=cor_s, line=dict(color='white', width=1)),
+                        name=f'Agulhada {tipo_s}', showlegend=True
+                    ), row=1, col=1)
+
+                # Didi Index
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida (3)',  line=dict(color='#00BFFF', width=1.5)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta (20)', line=dict(color='#FFD700', width=1.5)), row=2, col=1)
+                fig_ag.add_hline(y=0, line=dict(color='white', dash='dot', width=1), row=2, col=1)
+
+                # DMI / ADX
+                tr1_ag = df_ag_hist['High'] - df_ag_hist['Low']
+                tr2_ag = (df_ag_hist['High'] - df_ag_hist['Close'].shift(1)).abs()
+                tr3_ag = (df_ag_hist['Low']  - df_ag_hist['Close'].shift(1)).abs()
+                tr_ag  = pd.concat([tr1_ag, tr2_ag, tr3_ag], axis=1).max(axis=1)
+
+                up_ag  = df_ag_hist['High'] - df_ag_hist['High'].shift(1)
+                dn_ag  = df_ag_hist['Low'].shift(1) - df_ag_hist['Low']
+                pdm_ag = pd.Series(np.where((up_ag > dn_ag) & (up_ag > 0), up_ag, 0), index=df_ag_hist.index)
+                ndm_ag = pd.Series(np.where((dn_ag > up_ag) & (dn_ag > 0), dn_ag, 0), index=df_ag_hist.index)
+
+                tr8_ag = tr_ag.rolling(8).sum()
+                pdi_ag = 100 * pdm_ag.rolling(8).sum() / tr8_ag
+                ndi_ag = 100 * ndm_ag.rolling(8).sum() / tr8_ag
+                adx_ag = (100 * (np.abs(pdi_ag - ndi_ag) / (pdi_ag + ndi_ag))).rolling(8).mean()
+
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
+
+                fig_ag.update_layout(
+                    template='plotly_dark', height=850,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+                fig_ag.update_xaxes(rangeslider_visible=False)
+                st.plotly_chart(fig_ag, use_container_width=True)
+
+    # --- LEGENDA DO MÉTODO ---
+    with st.expander("📖 Como funciona o método Didi Aguiar?"):
+        st.markdown("""
+        **O Índice Didi** usa 3 médias móveis simples tendo como referência central a SMA8:
+
+        - **Didi Rápida** = SMA3 − SMA8
+        - **Didi Lenta**  = SMA20 − SMA8
+
+        **🟢 Agulhada de Compra:** a linha Rápida cruza o zero para **cima** enquanto a Lenta ainda está **abaixo** — significa SMA3 > SMA8 > SMA20, início de tendência de alta.
+
+        **🔴 Agulhada de Venda:** a linha Rápida cruza o zero para **baixo** enquanto a Lenta ainda está **acima** — significa SMA3 < SMA8 < SMA20, início de tendência de baixa.
+
+        **DMI / ADX** complementa o sinal:
+        - ADX > 25 confirma força da tendência
+        - +DI acima de -DI reforça o sinal de compra
+        - -DI acima de +DI reforça o sinal de venda
+
+        > ⚠️ Este scanner é uma **ferramenta de apoio**. Sempre confirme o sinal com outros indicadores antes de operar.
+        """)
