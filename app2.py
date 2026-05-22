@@ -25,80 +25,19 @@ st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notí
 # --- LISTA DAS TOP 70 AÇÕES SEPARADAS POR SETOR ---
 # ==============================================================================
 ativos_setores = {
-    'ITUB4.SA': 'Financeiro', 
-    'BBDC4.SA': 'Financeiro', 
-    'BBAS3.SA': 'Financeiro', 
-    'SANB11.SA': 'Financeiro', 
-    'BPAC11.SA': 'Financeiro', 
-    'B3SA3.SA': 'Financeiro', 
-    'BBSE3.SA': 'Financeiro', 
-    'CXSE3.SA': 'Financeiro', 
-    'IRBR3.SA': 'Financeiro', 
-    'PSSA3.SA': 'Financeiro',
-    'PETR4.SA': 'Petróleo e Gás', 
-    'PETR3.SA': 'Petróleo e Gás', 
-    'PRIO3.SA': 'Petróleo e Gás', 
-    'RECV3.SA': 'Petróleo e Gás', 
-    'ENAT3.SA': 'Petróleo e Gás', 
-    'RRRP3.SA': 'Petróleo e Gás', 
-    'UGPA3.SA': 'Petróleo e Gás', 
-    'VBBR3.SA': 'Petróleo e Gás', 
-    'CSAN3.SA': 'Petróleo e Gás',
-    'VALE3.SA': 'Mineração', 
-    'GGBR4.SA': 'Mineração', 
-    'GOAU4.SA': 'Mineração', 
-    'CSNA3.SA': 'Mineração', 
-    'USIM5.SA': 'Mineração', 
-    'CMIN3.SA': 'Mineração', 
-    'BRAP4.SA': 'Mineração',
-    'ELET3.SA': 'Energia', 
-    'ELET6.SA': 'Energia', 
-    'EQTL3.SA': 'Energia', 
-    'CMIG4.SA': 'Energia', 
-    'CPLE6.SA': 'Energia', 
-    'ENGI11.SA': 'Energia', 
-    'TAEE11.SA': 'Energia', 
-    'TRPL4.SA': 'Energia', 
-    'EGIE3.SA': 'Energia',
-    'WEGE3.SA': 'Indústria', 
-    'EMBR3.SA': 'Indústria',
-    'LREN3.SA': 'Varejo', 
-    'MGLU3.SA': 'Varejo', 
-    'ARZZ3.SA': 'Varejo', 
-    'ALOS3.SA': 'Varejo', 
-    'RENT3.SA': 'Varejo', 
-    'NTCO3.SA': 'Varejo', 
-    'ASAI3.SA': 'Varejo', 
-    'CRFB3.SA': 'Varejo', 
-    'PCAR3.SA': 'Varejo', 
-    'VIVA3.SA': 'Varejo',
-    'HAPV3.SA': 'Saúde', 
-    'RDOR3.SA': 'Saúde', 
-    'RADL3.SA': 'Saúde', 
-    'FLRY3.SA': 'Saúde', 
-    'MATD3.SA': 'Saúde',
-    'ABEV3.SA': 'Alimentos e Bebidas', 
-    'JBSS3.SA': 'Alimentos e Bebidas', 
-    'MRFG3.SA': 'Alimentos e Bebidas', 
-    'BEEF3.SA': 'Alimentos e Bebidas', 
-    'BRFS3.SA': 'Alimentos e Bebidas', 
-    'SMTO3.SA': 'Alimentos e Bebidas',
-    'RAIL3.SA': 'Logística', 
-    'CCRO3.SA': 'Logística', 
-    'AZUL4.SA': 'Logística', 
-    'GOLL4.SA': 'Logística',
-    'VIVT3.SA': 'Telecom e TI', 
-    'TIMS3.SA': 'Telecom e TI', 
-    'TOTVS3.SA': 'Telecom e TI',
-    'SBSP3.SA': 'Saneamento', 
-    'CSMG3.SA': 'Saneamento', 
-    'SAPR11.SA': 'Saneamento',
-    'SUZB3.SA': 'Papel e Celulose', 
-    'KLBN11.SA': 'Papel e Celulose',
-    'CYRE3.SA': 'Construção', 
-    'MRVE3.SA': 'Construção', 
-    'EZTC3.SA': 'Construção', 
-    'TEND3.SA': 'Construção'
+    'ITUB4.SA': 'Financeiro', 'BBDC4.SA': 'Financeiro', 'BBAS3.SA': 'Financeiro', 'SANB11.SA': 'Financeiro', 'BPAC11.SA': 'Financeiro', 'B3SA3.SA': 'Financeiro', 'BBSE3.SA': 'Financeiro', 'CXSE3.SA': 'Financeiro', 'IRBR3.SA': 'Financeiro', 'PSSA3.SA': 'Financeiro',
+    'PETR4.SA': 'Petróleo e Gás', 'PETR3.SA': 'Petróleo e Gás', 'PRIO3.SA': 'Petróleo e Gás', 'RECV3.SA': 'Petróleo e Gás', 'ENAT3.SA': 'Petróleo e Gás', 'RRRP3.SA': 'Petróleo e Gás', 'UGPA3.SA': 'Petróleo e Gás', 'VBBR3.SA': 'Petróleo e Gás', 'CSAN3.SA': 'Petróleo e Gás',
+    'VALE3.SA': 'Mineração', 'GGBR4.SA': 'Mineração', 'GOAU4.SA': 'Mineração', 'CSNA3.SA': 'Mineração', 'USIM5.SA': 'Mineração', 'CMIN3.SA': 'Mineração', 'BRAP4.SA': 'Mineração',
+    'ELET3.SA': 'Energia', 'ELET6.SA': 'Energia', 'EQTL3.SA': 'Energia', 'CMIG4.SA': 'Energia', 'CPLE6.SA': 'Energia', 'ENGI11.SA': 'Energia', 'TAEE11.SA': 'Energia', 'TRPL4.SA': 'Energia', 'EGIE3.SA': 'Energia',
+    'WEGE3.SA': 'Indústria', 'EMBR3.SA': 'Indústria',
+    'LREN3.SA': 'Varejo', 'MGLU3.SA': 'Varejo', 'ARZZ3.SA': 'Varejo', 'ALOS3.SA': 'Varejo', 'RENT3.SA': 'Varejo', 'NTCO3.SA': 'Varejo', 'ASAI3.SA': 'Varejo', 'CRFB3.SA': 'Varejo', 'PCAR3.SA': 'Varejo', 'VIVA3.SA': 'Varejo',
+    'HAPV3.SA': 'Saúde', 'RDOR3.SA': 'Saúde', 'RADL3.SA': 'Saúde', 'FLRY3.SA': 'Saúde', 'MATD3.SA': 'Saúde',
+    'ABEV3.SA': 'Alimentos e Bebidas', 'JBSS3.SA': 'Alimentos e Bebidas', 'MRFG3.SA': 'Alimentos e Bebidas', 'BEEF3.SA': 'Alimentos e Bebidas', 'BRFS3.SA': 'Alimentos e Bebidas', 'SMTO3.SA': 'Alimentos e Bebidas',
+    'RAIL3.SA': 'Logística', 'CCRO3.SA': 'Logística', 'AZUL4.SA': 'Logística', 'GOLL4.SA': 'Logística',
+    'VIVT3.SA': 'Telecom e TI', 'TIMS3.SA': 'Telecom e TI', 'TOTVS3.SA': 'Telecom e TI',
+    'SBSP3.SA': 'Saneamento', 'CSMG3.SA': 'Saneamento', 'SAPR11.SA': 'Saneamento',
+    'SUZB3.SA': 'Papel e Celulose', 'KLBN11.SA': 'Papel e Celulose',
+    'CYRE3.SA': 'Construção', 'MRVE3.SA': 'Construção', 'EZTC3.SA': 'Construção', 'TEND3.SA': 'Construção'
 }
 ativos_lista = list(ativos_setores.keys())
 
@@ -109,8 +48,7 @@ ativos_lista = list(ativos_setores.keys())
 def carregar_dados_geral(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
-    # Removido o argumento de sessão manual. Deixando o YFinance lidar nativamente com curl_cffi.
-    dados = yf.download(ativos, start=inicio, end=hoje)
+    dados = yf.download(ativos, start=inicio, end=hoje, progress=False)
     return dados['Close']
 
 @st.cache_data(ttl=600)
@@ -163,25 +101,33 @@ def fmt_br(val, is_pct=False, currency=False):
     if pd.isna(val) or val is None or val == "-": 
         return "-"
     
-    texto = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    
-    if is_pct: 
-        return f"{texto}%"
-    
-    if currency: 
-        return f"R$ {texto}"
+    try:
+        val_float = float(val)
+        texto = f"{val_float:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         
-    return texto
+        if is_pct: 
+            return f"{texto}%"
+        
+        if currency: 
+            return f"R$ {texto}"
+            
+        return texto
+    except:
+        return "-"
 
 def cor_variacao(val):
     if pd.isna(val) or val == "-": 
         return "#FFFFFF"
         
-    if val > 0: 
-        return "#228B22"
-    elif val < 0: 
-        return "#B22222"
-    else: 
+    try:
+        val_float = float(val)
+        if val_float > 0: 
+            return "#228B22"
+        elif val_float < 0: 
+            return "#B22222"
+        else: 
+            return "#FFFFFF"
+    except:
         return "#FFFFFF"
 
 # ==============================================================================
@@ -196,24 +142,15 @@ for ativo in ativos_lista:
     if ativo in precos_fechamento.columns:
         df['Close'] = precos_fechamento[ativo]
         
-        # Cálculos de médias móveis
         df['SMA20'] = df['Close'].rolling(window=20).mean()
         df['SMA50'] = df['Close'].rolling(window=50).mean()
         df['SMA200'] = df['Close'].rolling(window=200).mean()
         
-        # Validação do último preço
         serie_limpa = df['Close'].dropna()
         if not serie_limpa.empty:
             ultimo_preco = float(serie_limpa.iloc[-1])
         else:
             ultimo_preco = 0
-            
-        # Validação das médias para o dia atual
-        serie_sma20 = df['SMA20'].dropna()
-        if not serie_sma20.empty:
-            sma20 = float(serie_sma20.iloc[-1])
-        else:
-            sma20 = 0
             
         serie_sma50 = df['SMA50'].dropna()
         if not serie_sma50.empty:
@@ -227,13 +164,11 @@ for ativo in ativos_lista:
         else:
             sma200 = 0
             
-        # Variação Diária (%)
         if len(serie_limpa) > 1:
             variacao_diaria = float(serie_limpa.pct_change().iloc[-1] * 100)
         else:
             variacao_diaria = 0.0
             
-        # Definição das Tendências
         tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         tendencia_media = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         
@@ -268,7 +203,6 @@ aba_visao_geral, aba_analise_individual = st.tabs([
 with aba_visao_geral:
     st.markdown("### 📊 Mapa de Calor do Mercado")
     
-    # Listas para construção do Treemap do Plotly
     ids = ["B3"]
     labels = ["B3"]
     parents = [""]
@@ -276,7 +210,6 @@ with aba_visao_geral:
     colors = ["#FFFFFF"]
     customdata = [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
     
-    # Criando os nós dos Setores
     for setor in df_resumo['Setor'].unique():
         ids.append(setor)
         labels.append(setor)
@@ -285,7 +218,6 @@ with aba_visao_geral:
         colors.append("#FFFFFF")
         customdata.append([f"<b>Setor: {setor}</b>", f"<b>{setor}</b>"])
         
-        # Nó fantasma para forçar a cor do cabeçalho
         ids.append(setor + "_fantasma")
         labels.append("")
         parents.append(setor)
@@ -293,7 +225,6 @@ with aba_visao_geral:
         colors.append("#FFFFFF")
         customdata.append(["", ""])
 
-    # Criando os nós dos Ativos
     for index, row in df_resumo.iterrows():
         ids.append(row['Ativo'])
         labels.append(row['Ativo'])
@@ -304,11 +235,11 @@ with aba_visao_geral:
         preco = row['Preço (R$)']
         
         if var > 0.05:
-            colors.append("#228B22") # Verde
+            colors.append("#228B22")
         elif var < -0.05:
-            colors.append("#B22222") # Vermelho
+            colors.append("#B22222")
         else:
-            colors.append("#708090") # Cinza neutro
+            colors.append("#708090")
             
         preco_br = fmt_br(preco)
         var_br = f"{var:+.2f}%".replace(".", ",")
@@ -317,7 +248,6 @@ with aba_visao_geral:
         block_text = f"<b>{row['Ativo']}</b><br>R$ {preco_br}<br> {var_br}"
         customdata.append([hover_text, block_text])
 
-    # Plotando o Mapa de Calor
     figura_treemap = go.Figure(go.Treemap(
         ids=ids, 
         labels=labels, 
@@ -338,7 +268,6 @@ with aba_visao_geral:
     
     st.plotly_chart(figura_treemap, use_container_width=True)
 
-    # Tabela Resumo com Filtro
     st.subheader("📋 Resumo de Indicadores da Grade")
     
     coluna_filtro, coluna_vazia = st.columns([1, 2])
@@ -367,7 +296,6 @@ with aba_analise_individual:
         ).upper().strip()
     
     if ativo_buscado:
-        # Tratamento para adicionar o sufixo .SA para ações brasileiras
         if not ativo_buscado.endswith('.SA') and any(char.isdigit() for char in ativo_buscado):
             ativo_buscado += '.SA'
             
@@ -391,40 +319,45 @@ with aba_analise_individual:
 
         with st.spinner("Processando histórico de 10 anos e dados fundamentalistas..."):
             
-            # Instanciando o Ticker sem o custom session
             ticker_obj = yf.Ticker(ativo_buscado)
             
-            # Baixando histórico longo para basear as métricas de rentabilidade e Médias de 200
-            df_hist = yf.download(ativo_buscado, period="10y")
+            df_hist = yf.download(ativo_buscado, period="10y", progress=False)
             
-            if df_hist.empty:
-                st.error("⚠️ Código não encontrado no banco de dados.")
+            if df_hist is None or df_hist.empty:
+                st.error("⚠️ Código não encontrado ou sem dados no momento.")
             else:
-                # Corrigindo o MultiIndex que algumas versões do YFinance retornam
+                # Segurança: Limpeza do MultiIndex caso exista
                 if isinstance(df_hist.columns, pd.MultiIndex):
-                    df_hist.columns = df_hist.columns.droplevel(1)
+                    df_hist.columns = [col[0] for col in df_hist.columns]
 
                 # --------------------------------------------------------------
                 # RENTABILIDADES HISTÓRICAS
                 # --------------------------------------------------------------
-                preco_atual = float(df_hist['Close'].iloc[-1])
+                serie_hist_limpa = df_hist['Close'].dropna()
                 
-                def calcular_retorno(df_dados, dias_uteis):
-                    if len(df_dados) > dias_uteis:
-                        preco_antigo = float(df_dados['Close'].iloc[-dias_uteis])
-                        retorno = ((preco_atual / preco_antigo) - 1) * 100
-                        return retorno
-                    return "-"
+                if not serie_hist_limpa.empty:
+                    preco_atual = float(serie_hist_limpa.iloc[-1])
+                    
+                    def calcular_retorno(serie, dias_uteis):
+                        if len(serie) > dias_uteis:
+                            preco_antigo = float(serie.iloc[-dias_uteis])
+                            if preco_antigo > 0:
+                                retorno = ((preco_atual / preco_antigo) - 1) * 100
+                                return retorno
+                        return "-"
 
-                retorno_1m = calcular_retorno(df_hist, 21)
-                retorno_3m = calcular_retorno(df_hist, 63)
-                retorno_1a = calcular_retorno(df_hist, 252)
-                retorno_2a = calcular_retorno(df_hist, 504)
-                retorno_5a = calcular_retorno(df_hist, 1260)
-                retorno_10a = calcular_retorno(df_hist, 2520)
+                    retorno_1m = calcular_retorno(serie_hist_limpa, 21)
+                    retorno_3m = calcular_retorno(serie_hist_limpa, 63)
+                    retorno_1a = calcular_retorno(serie_hist_limpa, 252)
+                    retorno_2a = calcular_retorno(serie_hist_limpa, 504)
+                    retorno_5a = calcular_retorno(serie_hist_limpa, 1260)
+                    retorno_10a = calcular_retorno(serie_hist_limpa, 2520)
+                else:
+                    preco_atual = 0
+                    retorno_1m = retorno_3m = retorno_1a = retorno_2a = retorno_5a = retorno_10a = "-"
 
                 # --------------------------------------------------------------
-                # BUSCA FUNDAMENTALISTA
+                # BUSCA FUNDAMENTALISTA (Proteção para Cloud)
                 # --------------------------------------------------------------
                 info = {}
                 try: 
@@ -432,31 +365,26 @@ with aba_analise_individual:
                 except Exception: 
                     pass
 
-                # Variação em 12 meses
                 if retorno_1a != "-":
                     valor_var12m = retorno_1a
                 else:
                     valor_var12m = info.get('52WeekChange', 0) * 100
                     
-                # Múltiplos
                 valor_pl = info.get('trailingPE', "-")
                 valor_pvp = info.get('priceToBook', "-")
                 
-                # Dividend Yield TTM (Trailing Twelve Months) - O mais confiável
                 valor_dy = info.get('trailingAnnualDividendYield')
                 
-                # Fallback caso a API falhe no TTM
                 if valor_dy is None:
-                    valor_dy = info.get('dividendYield', 0)
+                    valor_dy = info.get('dividendYield')
                     
-                # Transformando em percentual se o dado existir
                 if valor_dy is not None and valor_dy != "-": 
                     valor_dy = valor_dy * 100
                 else:
                     valor_dy = "-"
 
                 # --------------------------------------------------------------
-                # RENDERIZAÇÃO DOS CARDS (Estilo Status Invest)
+                # RENDERIZAÇÃO DOS CARDS
                 # --------------------------------------------------------------
                 st.markdown(f"""
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">
@@ -527,13 +455,11 @@ with aba_analise_individual:
                 # --------------------------------------------------------------
                 # CÁLCULOS DE INDICADORES TÉCNICOS
                 # --------------------------------------------------------------
-                # Médias Móveis Simples
                 df_hist['SMA20'] = df_hist['Close'].rolling(window=20).mean()
                 df_hist['SMA50'] = df_hist['Close'].rolling(window=50).mean()
                 df_hist['SMA100'] = df_hist['Close'].rolling(window=100).mean()
                 df_hist['SMA200'] = df_hist['Close'].rolling(window=200).mean()
                 
-                # Didi Index (Agulhada)
                 linha_rapida = df_hist['Close'].rolling(window=3).mean()
                 linha_referencia = df_hist['Close'].rolling(window=8).mean()
                 linha_lenta = df_hist['Close'].rolling(window=20).mean()
@@ -541,7 +467,6 @@ with aba_analise_individual:
                 df_hist['DidiFast'] = linha_rapida - linha_referencia
                 df_hist['DidiSlow'] = linha_lenta - linha_referencia
                 
-                # Directional Movement Index (DMI / ADX)
                 true_range_1 = df_hist['High'] - df_hist['Low']
                 true_range_2 = (df_hist['High'] - df_hist['Close'].shift(1)).abs()
                 true_range_3 = (df_hist['Low'] - df_hist['Close'].shift(1)).abs()
@@ -596,7 +521,6 @@ with aba_analise_individual:
                     
                 df_plot = df_hist[df_hist.index >= limite_data].copy()
                 
-                # Definindo cores dinâmicas para o Gráfico
                 cores_volume = []
                 for row_tuple in df_plot.itertuples():
                     if row_tuple.Close >= row_tuple.Open:
@@ -617,7 +541,6 @@ with aba_analise_individual:
                 coluna_graficos, coluna_noticias = st.columns([3, 1])
 
                 with coluna_graficos:
-                    # Instanciando os Subplots
                     figura_tecnica = make_subplots(
                         rows=3, 
                         cols=1, 
@@ -636,167 +559,162 @@ with aba_analise_individual:
                         )
                     )
                     
-                    # Candlestick
-                    figura_tecnica.add_trace(
-                        go.Candlestick(
-                            x=df_plot.index, 
-                            open=df_plot['Open'], 
-                            high=df_plot['High'], 
-                            low=df_plot['Low'], 
-                            close=df_plot['Close'], 
-                            name='Candlestick'
-                        ), 
-                        row=1, 
-                        col=1, 
-                        secondary_y=False
-                    )
-                    
-                    # Plotando as Médias Móveis
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['SMA50'], 
-                            mode='lines', 
-                            name='Média 50', 
-                            line=dict(color='#00BFFF', width=1.5)
-                        ), 
-                        row=1, 
-                        col=1, 
-                        secondary_y=False
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['SMA200'], 
-                            mode='lines', 
-                            name='Média 200', 
-                            line=dict(color='white', width=1.5)
-                        ), 
-                        row=1, 
-                        col=1, 
-                        secondary_y=False
-                    )
-                    
-                    # Volume Sobreposto
-                    figura_tecnica.add_trace(
-                        go.Bar(
-                            x=df_plot.index, 
-                            y=df_plot['Volume'], 
-                            name='Volume', 
-                            marker_color=cores_volume, 
-                            opacity=0.35
-                        ), 
-                        row=1, 
-                        col=1, 
-                        secondary_y=True
-                    )
-                    
-                    # Gráfico Didi Index
-                    maximo_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
-                    if pd.isna(maximo_y_didi) or maximo_y_didi == 0: 
-                        maximo_y_didi = 1
+                    if not df_plot.empty:
+                        figura_tecnica.add_trace(
+                            go.Candlestick(
+                                x=df_plot.index, 
+                                open=df_plot['Open'], 
+                                high=df_plot['High'], 
+                                low=df_plot['Low'], 
+                                close=df_plot['Close'], 
+                                name='Candlestick'
+                            ), 
+                            row=1, 
+                            col=1, 
+                            secondary_y=False
+                        )
                         
-                    figura_tecnica.add_trace(
-                        go.Bar(
-                            x=df_plot.index, 
-                            y=[maximo_y_didi] * len(df_plot), 
-                            marker_color=cores_didi_fundo, 
-                            marker_line_width=0, 
-                            showlegend=False, 
-                            hoverinfo='skip'
-                        ), 
-                        row=2, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Bar(
-                            x=df_plot.index, 
-                            y=[-maximo_y_didi] * len(df_plot), 
-                            marker_color=cores_didi_fundo, 
-                            marker_line_width=0, 
-                            showlegend=False, 
-                            hoverinfo='skip'
-                        ), 
-                        row=2, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=np.zeros(len(df_plot)), 
-                            mode='lines', 
-                            name='Eixo Zero (Didi)', 
-                            line=dict(color='white', width=1, dash='dot')
-                        ), 
-                        row=2, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['DidiSlow'], 
-                            mode='lines', 
-                            name='Linha Lenta', 
-                            line=dict(color='#FF00FF', width=2)
-                        ), 
-                        row=2, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['DidiFast'], 
-                            mode='lines', 
-                            name='Linha Rápida', 
-                            line=dict(color='#00BFFF', width=2)
-                        ), 
-                        row=2, 
-                        col=1
-                    )
-                    
-                    # Gráfico ADX e DMI
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['ADX'], 
-                            mode='lines', 
-                            name='Força (ADX)', 
-                            line=dict(color='white', width=1.5)
-                        ), 
-                        row=3, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['PDI'], 
-                            mode='lines', 
-                            name='Compradores (+DI)', 
-                            line=dict(color='#00BFFF', width=1.5)
-                        ), 
-                        row=3, 
-                        col=1
-                    )
-                    
-                    figura_tecnica.add_trace(
-                        go.Scatter(
-                            x=df_plot.index, 
-                            y=df_plot['NDI'], 
-                            mode='lines', 
-                            name='Vendedores (-DI)', 
-                            line=dict(color='#FFD700', width=1.5)
-                        ), 
-                        row=3, 
-                        col=1
-                    )
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['SMA50'], 
+                                mode='lines', 
+                                name='Média 50', 
+                                line=dict(color='#00BFFF', width=1.5)
+                            ), 
+                            row=1, 
+                            col=1, 
+                            secondary_y=False
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['SMA200'], 
+                                mode='lines', 
+                                name='Média 200', 
+                                line=dict(color='white', width=1.5)
+                            ), 
+                            row=1, 
+                            col=1, 
+                            secondary_y=False
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Bar(
+                                x=df_plot.index, 
+                                y=df_plot['Volume'], 
+                                name='Volume', 
+                                marker_color=cores_volume, 
+                                opacity=0.35
+                            ), 
+                            row=1, 
+                            col=1, 
+                            secondary_y=True
+                        )
+                        
+                        maximo_y_didi = max(df_plot['DidiFast'].abs().max(), df_plot['DidiSlow'].abs().max()) * 1.4
+                        if pd.isna(maximo_y_didi) or maximo_y_didi == 0: 
+                            maximo_y_didi = 1
+                            
+                        figura_tecnica.add_trace(
+                            go.Bar(
+                                x=df_plot.index, 
+                                y=[maximo_y_didi] * len(df_plot), 
+                                marker_color=cores_didi_fundo, 
+                                marker_line_width=0, 
+                                showlegend=False, 
+                                hoverinfo='skip'
+                            ), 
+                            row=2, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Bar(
+                                x=df_plot.index, 
+                                y=[-maximo_y_didi] * len(df_plot), 
+                                marker_color=cores_didi_fundo, 
+                                marker_line_width=0, 
+                                showlegend=False, 
+                                hoverinfo='skip'
+                            ), 
+                            row=2, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=np.zeros(len(df_plot)), 
+                                mode='lines', 
+                                name='Eixo Zero', 
+                                line=dict(color='white', width=1, dash='dot')
+                            ), 
+                            row=2, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['DidiSlow'], 
+                                mode='lines', 
+                                name='Linha Lenta', 
+                                line=dict(color='#FF00FF', width=2)
+                            ), 
+                            row=2, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['DidiFast'], 
+                                mode='lines', 
+                                name='Linha Rápida', 
+                                line=dict(color='#00BFFF', width=2)
+                            ), 
+                            row=2, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['ADX'], 
+                                mode='lines', 
+                                name='Força (ADX)', 
+                                line=dict(color='white', width=1.5)
+                            ), 
+                            row=3, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['PDI'], 
+                                mode='lines', 
+                                name='Compradores (+DI)', 
+                                line=dict(color='#00BFFF', width=1.5)
+                            ), 
+                            row=3, 
+                            col=1
+                        )
+                        
+                        figura_tecnica.add_trace(
+                            go.Scatter(
+                                x=df_plot.index, 
+                                y=df_plot['NDI'], 
+                                mode='lines', 
+                                name='Vendedores (-DI)', 
+                                line=dict(color='#FFD700', width=1.5)
+                            ), 
+                            row=3, 
+                            col=1
+                        )
 
-                    # Ajustes Visuais do Gráfico
                     figura_tecnica.update_yaxes(
                         title_text="Preço (R$)", 
                         side="right", 
@@ -808,7 +726,7 @@ with aba_analise_individual:
                     figura_tecnica.update_yaxes(
                         showgrid=False, 
                         showticklabels=False, 
-                        range=[0, df_plot['Volume'].max() * 4], 
+                        range=[0, df_plot['Volume'].max() * 4] if not df_plot.empty else [0, 1], 
                         row=1, 
                         col=1, 
                         secondary_y=True
@@ -832,26 +750,26 @@ with aba_analise_individual:
                     st.plotly_chart(figura_tecnica, use_container_width=True)
 
                     # ----------------------------------------------------------
-                    # GRÁFICO DE BENCHMARKS FIXOS
+                    # GRÁFICO DE BENCHMARKS FIXOS (Com tratamento para Cloud)
                     # ----------------------------------------------------------
                     st.markdown("### 📊 Comparativo Contra Benchmarks Nacionais")
                     
                     figura_benchmarks = go.Figure()
                     
-                    # Normalizando o ativo principal para percentual
-                    primeiro_preco_ativo = float(df_plot['Close'].iloc[0])
-                    ativo_normalizado = (df_plot['Close'] / primeiro_preco_ativo - 1) * 100
+                    if not df_plot.empty:
+                        primeiro_preco_ativo = float(df_plot['Close'].iloc[0])
+                        if primeiro_preco_ativo > 0:
+                            ativo_normalizado = (df_plot['Close'] / primeiro_preco_ativo - 1) * 100
+                            
+                            figura_benchmarks.add_trace(
+                                go.Scatter(
+                                    x=ativo_normalizado.index, 
+                                    y=ativo_normalizado, 
+                                    name=ativo_buscado, 
+                                    line=dict(color='#00BFFF', width=2.5)
+                                )
+                            )
                     
-                    figura_benchmarks.add_trace(
-                        go.Scatter(
-                            x=ativo_normalizado.index, 
-                            y=ativo_normalizado, 
-                            name=ativo_buscado, 
-                            line=dict(color='#00BFFF', width=2.5)
-                        )
-                    )
-                    
-                    # Dicionário fixo de Benchmarks e seus respectivos Tickers (ETFs e Índices)
                     mapa_indicadores = {
                         'IBOV (Mercado Geral)': '^BVSP', 
                         'IFIX (Fundos Imobiliários)': 'XFIX11.SA', 
@@ -861,24 +779,34 @@ with aba_analise_individual:
                     }
                     
                     for nome_indicador, ticker_indicador in mapa_indicadores.items():
-                        # O yfinance busca os benchmarks
-                        df_benchmark = yf.download(ticker_indicador, start=limite_data, progress=False)
-                        
-                        if not df_benchmark.empty:
-                            # Prevenindo datas duplicadas
-                            df_benchmark = df_benchmark[~df_benchmark.index.duplicated(keep='first')]
+                        try:
+                            df_benchmark = yf.download(ticker_indicador, start=limite_data, progress=False)
                             
-                            primeiro_preco_benchmark = float(df_benchmark['Close'].iloc[0])
-                            benchmark_normalizado = (df_benchmark['Close'] / primeiro_preco_benchmark - 1) * 100
-                            
-                            figura_benchmarks.add_trace(
-                                go.Scatter(
-                                    x=benchmark_normalizado.index, 
-                                    y=benchmark_normalizado, 
-                                    name=nome_indicador, 
-                                    line=dict(width=1.5, dash='dot')
-                                )
-                            )
+                            if df_benchmark is not None and not df_benchmark.empty:
+                                if isinstance(df_benchmark.columns, pd.MultiIndex):
+                                    df_benchmark.columns = [col[0] for col in df_benchmark.columns]
+                                    
+                                df_benchmark = df_benchmark[~df_benchmark.index.duplicated(keep='first')]
+                                
+                                if 'Close' in df_benchmark.columns:
+                                    serie_bench_limpa = df_benchmark['Close'].dropna()
+                                    
+                                    if not serie_bench_limpa.empty:
+                                        primeiro_preco_benchmark = float(serie_bench_limpa.iloc[0])
+                                        
+                                        if primeiro_preco_benchmark > 0:
+                                            benchmark_normalizado = (serie_bench_limpa / primeiro_preco_benchmark - 1) * 100
+                                            
+                                            figura_benchmarks.add_trace(
+                                                go.Scatter(
+                                                    x=benchmark_normalizado.index, 
+                                                    y=benchmark_normalizado, 
+                                                    name=nome_indicador, 
+                                                    line=dict(width=1.5, dash='dot')
+                                                )
+                                            )
+                        except Exception:
+                            pass # Ignora se falhar devido à proteção na cloud
                             
                     figura_benchmarks.update_layout(
                         template='plotly_dark', 
@@ -900,7 +828,7 @@ with aba_analise_individual:
                     lista_noticias = buscar_noticias_google(ativo_buscado)
                     
                     if not lista_noticias:
-                        st.info("Não há comunicados recentes registrados para este ativo no feed do Google Notícias.")
+                        st.info("Não há comunicados recentes registados para este ativo no momento.")
                     else:
                         for noticia in lista_noticias:
                             titulo_noticia = noticia['title']
