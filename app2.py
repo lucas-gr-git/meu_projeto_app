@@ -14,6 +14,46 @@ import math
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
+
+# ==============================================================================
+# --- SISTEMA DE SEGURANÇA E LOGIN ---
+# ==============================================================================
+# Cadastre aqui os e-mails permitidos e as senhas de acesso
+USUARIOS_CADASTRADOS = {
+    "lucas@provedor.com.br": "senha123",
+    "visitante@email.com": "acesso2026",
+    "amigo@email.com": "123456"
+}
+
+# Inicializa o estado de autenticação na sessão
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
+
+# Se não estiver autenticado, mostra a tela de login e PARA a execução do resto do código
+if not st.session_state.autenticado:
+    # Centralizando a caixa de login na tela
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("<h2 style='text-align: center;'>🔒 Acesso Restrito</h2>", unsafe_allow_html=True)
+        st.info("Por favor, faça o login para acessar o Terminal B3.")
+        
+        email_digitado = st.text_input("E-mail cadastrado:").strip().lower()
+        senha_digitada = st.text_input("Senha:", type="password")
+        
+        if st.button("Entrar", use_container_width=True):
+            if email_digitado in USUARIOS_CADASTRADOS and USUARIOS_CADASTRADOS[email_digitado] == senha_digitada:
+                st.session_state.autenticado = True
+                st.rerun() # Atualiza a página. Como agora está autenticado, ele vai pular este bloco de login.
+            else:
+                st.error("❌ E-mail não cadastrado ou senha incorreta.")
+                
+    # O comando abaixo é a sua muralha. Nada abaixo desta linha é executado se o login não for feito.
+    st.stop()
+
+# ==============================================================================
+# --- O SEU CÓDIGO ORIGINAL COMEÇA AQUI DEPOIS DO LOGIN ---
+# ==============================================================================
 st.title("🖥️ Terminal Profissional de Inteligência Mercado - B3")
 st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notícias em Tempo Real.")
 
