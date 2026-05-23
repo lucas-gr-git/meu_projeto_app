@@ -181,11 +181,12 @@ df_resumo = pd.DataFrame(resultados)
 # ==============================================================================
 # --- ABAS ---
 # ==============================================================================
-tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes = st.tabs([
+tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes, tab_inteligencia = st.tabs([
     "🌐 Visão Geral do Mercado",
     "🔬 Análise Detalhada por Ativo",
     "🎯 Agulhadas do Didi",
-    "📈 Opções — Método RCO"
+    "📈 Opções — Método RCO",
+    "🧠 Inteligência de Seleção"
 ])
 
 # ==============================================================================
@@ -952,3 +953,469 @@ with tab_opcoes:
 
             st.markdown("##### 📋 Histórico de Operações")
             st.dataframe(df_ops, use_container_width=True, hide_index=True)
+
+ 
+# ==============================================================================
+# --- ABA 5: INTELIGÊNCIA DE SELEÇÃO ---
+# ==============================================================================
+with tab_inteligencia:
+    st.markdown("### 🧠 Inteligência de Seleção de Ativos para Opções")
+    st.markdown("IV Rank, Score de Atratividade e Calendário de Vencimentos para identificar os melhores papéis.")
+
+    sub_ivrank, sub_score, sub_calendario = st.tabs([
+        "📊 IV Rank — Volatilidade Implícita",
+        "🏆 Score de Atratividade",
+        "📅 Calendário de Vencimentos"
+    ])
+
+    # =========================================================================
+    # SUB-ABA: IV RANK
+    # =========================================================================
+    with sub_ivrank:
+        st.markdown("#### 📊 IV Rank — Volatilidade Implícita vs Histórica")
+        st.markdown("""
+        O **IV Rank** mostra se a volatilidade atual está cara ou barata em relação ao histórico de 1 ano.
+        - **IV Rank > 50%** 🔴 → Volatilidade CARA → **Melhor momento para VENDER opções**
+        - **IV Rank < 30%** 🟢 → Volatilidade BARATA → **Melhor momento para COMPRAR opções**
+        """)
+
+        col_iv1, _ = st.columns([1, 2])
+        with col_iv1:
+            iv_periodo = st.selectbox("Janela para cálculo de volatilidade:", [21, 30, 45, 63], index=1,
+                format_func=lambda x: f"{x} dias úteis", key="iv_periodo")
+
+        if st.button("📊 Calcular IV Rank de Todos os Ativos", key="btn_ivrank"):
+            with st.spinner("Calculando volatilidade histórica e IV Rank..."):
+                iv_resultados = []
+                for ativo in ativos_lista:
+                    if ativo not in precos_fechamento.columns: continue
+                    serie = precos_fechamento[ativo].dropna()
+                    if len(serie) < 252: continue
+                    try:
+                        retornos = np.log(serie / serie.shift(1)).dropna()
+
+                        # Vol atual (janela selecionada)
+                        vol_atual = float(retornos.rolling(iv_periodo).std().iloc[-1] * math.sqrt(252) * 100)
+
+                        # Vol mínima e máxima do último ano (252 dias)
+                        vols_ano = retornos.rolling(iv_periodo).std() * math.sqrt(252) * 100
+                        vols_ano = vols_ano.dropna().iloc[-252:]
+                        vol_min  = float(vols_ano.min())
+                        vol_max  = float(vols_ano.max())
+
+                        if vol_max == vol_min: continue
+                        iv_rank = ((vol_atual - vol_min) / (vol_max - vol_min)) * 100
+
+                        # Classificação
+                        if iv_rank >= 50:
+                            classificacao = "🔴 VENDER"
+                            recomendacao  = "Venda Coberta / Venda de Put"
+                        elif iv_rank <= 30:
+                            classificacao = "🟢 COMPRAR"
+                            recomendacao  = "Compra de Call DITM / Spread"
+                        else:
+                            classificacao = "🟡 NEUTRO"
+                            recomendacao  = "Aguardar melhor momento"
+
+                        # Percentil do prêmio estimado (vol * preco * sqrt(T/252))
+                        S          = float(serie.iloc[-1])
+                        T_30d      = 30 / 252
+                        premio_est = S * (vol_atual/100) * math.sqrt(T_30d)
+
+                        iv_resultados.append({
+                            'Ativo':             ativo.replace('.SA',''),
+                            'Setor':             ativos_setores[ativo],
+                            'Preço (R$)':        round(S, 2),
+                            'Vol Atual (%)':     round(vol_atual, 1),
+                            'Vol Mín 1A (%)':    round(vol_min, 1),
+                            'Vol Máx 1A (%)':    round(vol_max, 1),
+                            'IV Rank (%)':       round(iv_rank, 1),
+                            'Classificação':     classificacao,
+                            'Estratégia':        recomendacao,
+                            'Prêmio Est. 30D (R$)': round(premio_est, 2)
+                        })
+                    except: continue
+
+                df_iv = pd.DataFrame(iv_resultados)
+                if not df_iv.empty:
+                    df_iv = df_iv.sort_values('IV Rank (%)', ascending=False)
+
+                    # Métricas
+                    qtd_vender  = len(df_iv[df_iv['IV Rank (%)'] >= 50])
+                    qtd_comprar = len(df_iv[df_iv['IV Rank (%)'] <= 30])
+                    qtd_neutro  = len(df_iv) - qtd_vender - qtd_comprar
+                    iv_medio    = df_iv['IV Rank (%)'].mean()
+
+                    c1, c2, c3, c4 = st.columns(4)
+                    c1.metric("🔴 Moment. Venda", qtd_vender, help="IV Rank ≥ 50% — prêmios inflados")
+                    c2.metric("🟡 Neutros", qtd_neutro)
+                    c3.metric("🟢 Moment. Compra", qtd_comprar, help="IV Rank ≤ 30% — prêmios baratos")
+                    c4.metric("📊 IV Rank Médio", f"{iv_medio:.1f}%")
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # Tabela top vendas
+                    st.markdown("##### 🔴 Melhores para VENDER Opções (IV Rank alto)")
+                    df_venda = df_iv[df_iv['IV Rank (%)'] >= 50].head(15)
+                    if not df_venda.empty:
+                        st.dataframe(df_venda, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("Nenhum ativo com IV Rank ≥ 50% no momento.")
+
+                    st.markdown("##### 🟢 Melhores para COMPRAR Opções (IV Rank baixo)")
+                    df_compra = df_iv[df_iv['IV Rank (%)'] <= 30].sort_values('IV Rank (%)').head(15)
+                    if not df_compra.empty:
+                        st.dataframe(df_compra, use_container_width=True, hide_index=True)
+                    else:
+                        st.info("Nenhum ativo com IV Rank ≤ 30% no momento.")
+
+                    # Gráfico IV Rank de todos os ativos
+                    fig_iv = go.Figure()
+                    cores_iv = ['#B22222' if v >= 50 else '#228B22' if v <= 30 else '#DAA520'
+                                for v in df_iv['IV Rank (%)']]
+                    fig_iv.add_trace(go.Bar(
+                        x=df_iv['Ativo'], y=df_iv['IV Rank (%)'],
+                        marker_color=cores_iv, name='IV Rank'
+                    ))
+                    fig_iv.add_hline(y=50, line=dict(color='#FF4500', dash='dot', width=2),
+                        annotation_text="50% — Zona de Venda", annotation_position="top right")
+                    fig_iv.add_hline(y=30, line=dict(color='#00FF7F', dash='dot', width=2),
+                        annotation_text="30% — Zona de Compra", annotation_position="bottom right")
+                    fig_iv.update_layout(template='plotly_dark', height=450,
+                        xaxis_title="Ativo", yaxis_title="IV Rank (%)",
+                        title="IV Rank de Todos os Ativos — Vermelho=Vender | Amarelo=Neutro | Verde=Comprar")
+                    fig_iv.update_xaxes(tickangle=45)
+                    st.plotly_chart(fig_iv, use_container_width=True)
+
+                    # Gráfico dispersão Vol Atual vs IV Rank
+                    fig_iv2 = go.Figure()
+                    fig_iv2.add_trace(go.Scatter(
+                        x=df_iv['Vol Atual (%)'], y=df_iv['IV Rank (%)'],
+                        mode='markers+text', text=df_iv['Ativo'], textposition='top center',
+                        marker=dict(size=9, color=df_iv['IV Rank (%)'],
+                            colorscale='RdYlGn_r', showscale=True,
+                            colorbar=dict(title='IV Rank %')),
+                        name='Ativos'
+                    ))
+                    fig_iv2.add_hline(y=50, line=dict(color='red', dash='dot'))
+                    fig_iv2.add_hline(y=30, line=dict(color='green', dash='dot'))
+                    fig_iv2.update_layout(template='plotly_dark', height=500,
+                        xaxis_title="Volatilidade Atual (%)",
+                        yaxis_title="IV Rank (%)",
+                        title="Volatilidade Atual vs IV Rank")
+                    st.plotly_chart(fig_iv2, use_container_width=True)
+
+        with st.expander("📖 O que é IV Rank e por que ele importa?"):
+            st.markdown("""
+            **IV Rank** mede onde a volatilidade atual está dentro do intervalo do último ano:
+
+            ```
+            IV Rank = (Vol Atual - Vol Mínima 1A) / (Vol Máxima 1A - Vol Mínima 1A) × 100
+            ```
+
+            **Por que isso importa para vendedores de opções?**
+            - Quando a volatilidade está **alta** (IV Rank > 50%), os **prêmios estão inflados**
+            - Você vende a opção cara e recompra mais barata quando a volatilidade cai
+            - É como vender guarda-chuva durante tempestade — e recomprar no sol
+
+            **Exemplo prático:**
+            - PETR4 com IV Rank = 75% → prêmio atual está entre os 25% mais caros do ano → ótimo para vender
+            - VALE3 com IV Rank = 15% → prêmio barato → melhor aguardar ou comprar opção longa
+            """)
+
+    # =========================================================================
+    # SUB-ABA: SCORE DE ATRATIVIDADE
+    # =========================================================================
+    with sub_score:
+        st.markdown("#### 🏆 Score de Atratividade para Opções")
+        st.markdown("Pontuação de 0 a 100 que combina tendência técnica, volatilidade, fundamentos e liquidez estimada.")
+
+        col_s1, col_s2 = st.columns([1, 2])
+        with col_s1:
+            score_estrategia = st.selectbox("Estratégia de referência:",
+                ["Venda Coberta / Venda de Put", "Compra de Call DITM", "Trava de Alta"], key="score_est")
+
+        if st.button("🏆 Calcular Score de Todos os Ativos", key="btn_score"):
+            with st.spinner("Calculando score de atratividade..."):
+                score_resultados = []
+                for ativo in ativos_lista:
+                    if ativo not in precos_fechamento.columns: continue
+                    serie = precos_fechamento[ativo].dropna()
+                    if len(serie) < 200: continue
+                    try:
+                        S      = float(serie.iloc[-1])
+                        ret    = np.log(serie / serie.shift(1)).dropna()
+                        vol_at = float(ret.rolling(21).std().iloc[-1] * math.sqrt(252) * 100)
+
+                        # Tendência (médias)
+                        sma50_s  = float(serie.rolling(50).mean().iloc[-1])
+                        sma200_s = float(serie.rolling(200).mean().iloc[-1])
+                        acima_50  = S > sma50_s
+                        acima_200 = S > sma200_s
+
+                        # RSI
+                        delta_s = serie.diff()
+                        ganho_s = delta_s.where(delta_s > 0, 0).rolling(14).mean()
+                        perda_s = (-delta_s.where(delta_s < 0, 0)).rolling(14).mean()
+                        rs_s    = ganho_s / perda_s
+                        rsi_s   = float((100 - (100 / (1 + rs_s))).iloc[-1])
+
+                        # IV Rank
+                        vols_ano_s = ret.rolling(21).std() * math.sqrt(252) * 100
+                        vols_ano_s = vols_ano_s.dropna().iloc[-252:]
+                        vol_min_s  = float(vols_ano_s.min())
+                        vol_max_s  = float(vols_ano_s.max())
+                        iv_rank_s  = ((vol_at - vol_min_s) / (vol_max_s - vol_min_s)) * 100 if vol_max_s != vol_min_s else 50
+
+                        # Volatilidade diária (proxy de liquidez)
+                        vol_diaria = float(serie.pct_change().abs().rolling(21).mean().iloc[-1] * 100)
+
+                        # CÁLCULO DO SCORE (0-100)
+                        if score_estrategia == "Venda Coberta / Venda de Put":
+                            # Quer: tendência de alta, IV Rank alto, RSI não sobrecomprado, vol moderada
+                            s_tendencia  = 25 if (acima_50 and acima_200) else 15 if acima_50 else 5
+                            s_iv_rank    = min(iv_rank_s / 100 * 30, 30)   # máx 30 pts
+                            s_rsi        = 20 if 40 < rsi_s < 65 else 10 if rsi_s <= 40 else 5
+                            s_volatilidade = 15 if 20 < vol_at < 50 else 8 if vol_at <= 20 else 5
+                            s_liquidez   = min(vol_diaria * 2, 10)          # máx 10 pts
+                        elif score_estrategia == "Compra de Call DITM":
+                            # Quer: tendência forte de alta, IV Rank baixo, RSI em aceleração
+                            s_tendencia  = 30 if (acima_50 and acima_200) else 15 if acima_50 else 0
+                            s_iv_rank    = max(30 - (iv_rank_s / 100 * 30), 0)  # iv baixo = mais pontos
+                            s_rsi        = 20 if rsi_s > 55 else 10
+                            s_volatilidade = 10 if vol_at > 30 else 5
+                            s_liquidez   = min(vol_diaria * 2, 10)
+                        else:  # Trava de Alta
+                            s_tendencia  = 25 if (acima_50 and acima_200) else 12 if acima_50 else 3
+                            s_iv_rank    = min(iv_rank_s / 100 * 25, 25)
+                            s_rsi        = 20 if 45 < rsi_s < 70 else 8
+                            s_volatilidade = 20 if 25 < vol_at < 60 else 8
+                            s_liquidez   = min(vol_diaria * 2, 10)
+
+                        score_total = s_tendencia + s_iv_rank + s_rsi + s_volatilidade + s_liquidez
+                        score_total = round(min(score_total, 100), 1)
+
+                        # Estrelas
+                        if score_total >= 75:   estrelas = "⭐⭐⭐⭐⭐"
+                        elif score_total >= 60: estrelas = "⭐⭐⭐⭐"
+                        elif score_total >= 45: estrelas = "⭐⭐⭐"
+                        elif score_total >= 30: estrelas = "⭐⭐"
+                        else:                   estrelas = "⭐"
+
+                        tendencia_txt = "Alta Forte" if (acima_50 and acima_200) else "Alta Parcial" if acima_50 else "Baixa"
+
+                        score_resultados.append({
+                            'Ativo':           ativo.replace('.SA',''),
+                            'Setor':           ativos_setores[ativo],
+                            'Score':           score_total,
+                            'Estrelas':        estrelas,
+                            'Preço (R$)':      round(S, 2),
+                            'Tendência':       tendencia_txt,
+                            'RSI':             round(rsi_s, 1),
+                            'IV Rank (%)':     round(iv_rank_s, 1),
+                            'Vol Anual (%)':   round(vol_at, 1),
+                            'Pts Tendência':   round(s_tendencia, 1),
+                            'Pts IV Rank':     round(s_iv_rank, 1),
+                            'Pts RSI':         round(s_rsi, 1),
+                            'Pts Vol':         round(s_volatilidade, 1),
+                            'Pts Liquidez':    round(s_liquidez, 1),
+                        })
+                    except: continue
+
+                df_score = pd.DataFrame(score_resultados)
+                if not df_score.empty:
+                    df_score = df_score.sort_values('Score', ascending=False)
+
+                    # Top 5 destaques
+                    st.markdown("### 🥇 Top 5 Ativos para Operar Agora")
+                    top5 = df_score.head(5)
+                    cols_top = st.columns(5)
+                    for i, (_, row) in enumerate(top5.iterrows()):
+                        with cols_top[i]:
+                            cor_score = "#228B22" if row['Score'] >= 60 else "#DAA520" if row['Score'] >= 40 else "#B22222"
+                            st.markdown(f"""
+                            <div style="background:#1e1e1e;border:2px solid {cor_score};border-radius:10px;text-align:center;padding:15px;">
+                                <div style="font-size:22px;font-weight:bold;color:white;">{row['Ativo']}</div>
+                                <div style="font-size:28px;font-weight:bold;color:{cor_score};">{row['Score']}</div>
+                                <div style="font-size:16px;">{row['Estrelas']}</div>
+                                <div style="font-size:11px;color:#aaa;margin-top:5px;">{row['Tendência']}</div>
+                                <div style="font-size:11px;color:#aaa;">IV Rank: {row['IV Rank (%)']}%</div>
+                                <div style="font-size:11px;color:#aaa;">RSI: {row['RSI']}</div>
+                            </div>""", unsafe_allow_html=True)
+
+                    st.markdown("<br>", unsafe_allow_html=True)
+
+                    # Tabela completa
+                    st.markdown("### 📋 Ranking Completo")
+                    st.dataframe(
+                        df_score[['Ativo','Setor','Score','Estrelas','Preço (R$)','Tendência','RSI','IV Rank (%)','Vol Anual (%)','Pts Tendência','Pts IV Rank','Pts RSI','Pts Vol','Pts Liquidez']],
+                        use_container_width=True, hide_index=True
+                    )
+
+                    # Gráfico score por ativo
+                    fig_score = go.Figure()
+                    cores_score = ['#228B22' if v >= 60 else '#DAA520' if v >= 40 else '#B22222'
+                                   for v in df_score['Score']]
+                    fig_score.add_trace(go.Bar(
+                        x=df_score['Ativo'], y=df_score['Score'],
+                        marker_color=cores_score, text=df_score['Score'],
+                        textposition='outside', name='Score'
+                    ))
+                    fig_score.add_hline(y=60, line=dict(color='#228B22', dash='dot'),
+                        annotation_text="60 — Excelente", annotation_position="top right")
+                    fig_score.add_hline(y=40, line=dict(color='#DAA520', dash='dot'),
+                        annotation_text="40 — Razoável", annotation_position="top right")
+                    fig_score.update_layout(template='plotly_dark', height=500,
+                        xaxis_title="Ativo", yaxis_title="Score (0-100)",
+                        title=f"Score de Atratividade — {score_estrategia}",
+                        yaxis=dict(range=[0, 110]))
+                    fig_score.update_xaxes(tickangle=45)
+                    st.plotly_chart(fig_score, use_container_width=True)
+
+                    # Gráfico radar do top 1
+                    top1 = df_score.iloc[0]
+                    categorias = ['Tendência', 'IV Rank', 'RSI', 'Volatilidade', 'Liquidez']
+                    maximos     = [25, 30, 20, 20, 10]
+                    valores     = [top1['Pts Tendência'], top1['Pts IV Rank'], top1['Pts RSI'], top1['Pts Vol'], top1['Pts Liquidez']]
+                    pct_valores = [v/m*100 for v, m in zip(valores, maximos)]
+
+                    fig_radar = go.Figure()
+                    fig_radar.add_trace(go.Scatterpolar(
+                        r=pct_valores + [pct_valores[0]], theta=categorias + [categorias[0]],
+                        fill='toself', fillcolor='rgba(0,191,255,0.2)',
+                        line=dict(color='#00BFFF', width=2), name=top1['Ativo']
+                    ))
+                    fig_radar.update_layout(
+                        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                        template='plotly_dark', height=400,
+                        title=f"Radar do Melhor Ativo: {top1['Ativo']} (Score {top1['Score']})"
+                    )
+                    st.plotly_chart(fig_radar, use_container_width=True)
+
+        with st.expander("📖 Como o Score é calculado?"):
+            st.markdown("""
+            O Score combina 5 dimensões com pesos diferentes:
+
+            | Dimensão | Peso | O que avalia |
+            |---|---|---|
+            | **Tendência** | 25 pts | Preço acima das SMA50 e SMA200 |
+            | **IV Rank** | 30 pts | Volatilidade cara ou barata vs histórico |
+            | **RSI** | 20 pts | Momentum — nem sobrecomprado nem sobrevendido |
+            | **Volatilidade** | 15 pts | Nível de vol favorável para a estratégia |
+            | **Liquidez** | 10 pts | Atividade média diária do ativo |
+
+            > O score muda conforme a estratégia selecionada — os pesos e critérios se adaptam automaticamente.
+            """)
+
+    # =========================================================================
+    # SUB-ABA: CALENDÁRIO DE VENCIMENTOS
+    # =========================================================================
+    with sub_calendario:
+        st.markdown("#### 📅 Calendário de Vencimentos de Opções — B3")
+        st.markdown("Na B3, as opções vencem sempre na **3ª segunda-feira** de cada mês.")
+
+        def calcular_terceira_segunda(ano, mes):
+            primeiro_dia = datetime(ano, mes, 1)
+            dia_semana   = primeiro_dia.weekday()  # 0=segunda
+            if dia_semana <= 0:
+                primeira_segunda = primeiro_dia + timedelta(days=(0 - dia_semana))
+            else:
+                primeira_segunda = primeiro_dia + timedelta(days=(7 - dia_semana))
+            terceira_segunda = primeira_segunda + timedelta(weeks=2)
+            return terceira_segunda
+
+        hoje_cal = datetime.today()
+        vencimentos = []
+        for offset in range(12):
+            mes_alvo = (hoje_cal.month - 1 + offset) % 12 + 1
+            ano_alvo = hoje_cal.year + ((hoje_cal.month - 1 + offset) // 12)
+            vcto     = calcular_terceira_segunda(ano_alvo, mes_alvo)
+            dias_uteis_ate = len(pd.bdate_range(hoje_cal.date(), vcto.date()))
+            dias_corridos  = (vcto.date() - hoje_cal.date()).days
+            passado        = vcto.date() < hoje_cal.date()
+
+            meses_br = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+            letra_opcao = ['A','B','C','D','E','F','G','H','I','J','K','L'][mes_alvo - 1]
+
+            vencimentos.append({
+                'Mês':             f"{meses_br[mes_alvo-1]}/{ano_alvo}",
+                'Data Vencimento': vcto.strftime('%d/%m/%Y'),
+                'Dias Corridos':   dias_corridos if not passado else "Vencido",
+                'Dias Úteis':      dias_uteis_ate if not passado else "Vencido",
+                'Letra (Call)':    letra_opcao,
+                'Letra (Put)':     chr(ord(letra_opcao) + 12),
+                'Status':          "✅ Ativo" if not passado else "❌ Vencido"
+            })
+
+        df_vcto = pd.DataFrame(vencimentos)
+        df_proximos = df_vcto[df_vcto['Status'] == "✅ Ativo"].head(6)
+
+        # Cards dos próximos 3 vencimentos
+        st.markdown("### 📌 Próximos Vencimentos")
+        cols_vcto = st.columns(3)
+        for i, (_, row) in enumerate(df_proximos.head(3).iterrows()):
+            with cols_vcto[i]:
+                dias = row['Dias Úteis']
+                cor  = "#B22222" if isinstance(dias, int) and dias <= 10 else "#DAA520" if isinstance(dias, int) and dias <= 21 else "#228B22"
+                st.markdown(f"""
+                <div style="background:#1e1e1e;border:2px solid {cor};border-radius:10px;text-align:center;padding:15px;margin-bottom:10px;">
+                    <div style="font-size:18px;font-weight:bold;color:#d4af37;">{row['Mês']}</div>
+                    <div style="font-size:22px;font-weight:bold;color:white;">{row['Data Vencimento']}</div>
+                    <div style="font-size:28px;font-weight:bold;color:{cor};">{dias} dias úteis</div>
+                    <div style="font-size:12px;color:#aaa;margin-top:8px;">Série Call: <b style="color:#00BFFF;">{row['Letra (Call)']}</b> | Put: <b style="color:#FFD700;">{row['Letra (Put)']}</b></div>
+                    <div style="font-size:11px;color:#aaa;">{row['Dias Corridos']} dias corridos</div>
+                </div>""", unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 📋 Calendário Completo 12 Meses")
+        st.dataframe(df_vcto, use_container_width=True, hide_index=True)
+
+        # Timeline visual
+        df_ativos_cal = df_proximos.copy()
+        df_ativos_cal['Dias Úteis Num'] = pd.to_numeric(df_ativos_cal['Dias Úteis'], errors='coerce')
+        df_ativos_cal = df_ativos_cal.dropna(subset=['Dias Úteis Num'])
+
+        fig_cal = go.Figure()
+        cores_cal = ['#B22222' if d <= 10 else '#DAA520' if d <= 21 else '#228B22'
+                     for d in df_ativos_cal['Dias Úteis Num']]
+        fig_cal.add_trace(go.Bar(
+            x=df_ativos_cal['Mês'], y=df_ativos_cal['Dias Úteis Num'],
+            marker_color=cores_cal, text=df_ativos_cal['Dias Úteis Num'],
+            textposition='outside', name='Dias Úteis até Vencimento'
+        ))
+        fig_cal.add_hline(y=21, line=dict(color='#DAA520', dash='dot'),
+            annotation_text="21 dias — Zona ideal para entrar (Theta máximo)", annotation_position="top right")
+        fig_cal.add_hline(y=10, line=dict(color='#B22222', dash='dot'),
+            annotation_text="10 dias — Zona de risco (Gamma alto)", annotation_position="top right")
+        fig_cal.update_layout(template='plotly_dark', height=400,
+            yaxis_title="Dias Úteis até Vencimento",
+            title="Dias até cada Vencimento — Verde=Confortável | Amarelo=Atenção | Vermelho=Urgente")
+        st.plotly_chart(fig_cal, use_container_width=True)
+
+        # Guia de letras
+        with st.expander("📖 Guia de Letras das Séries de Opções B3"):
+            st.markdown("""
+            As opções na B3 seguem o padrão: **TICKER + LETRA + STRIKE**
+
+            | Mês | Letra Call | Letra Put |
+            |---|---|---|
+            | Janeiro | A | M |
+            | Fevereiro | B | N |
+            | Março | C | O |
+            | Abril | D | P |
+            | Maio | E | Q |
+            | Junho | F | R |
+            | Julho | G | S |
+            | Agosto | H | T |
+            | Setembro | I | U |
+            | Outubro | J | V |
+            | Novembro | K | W |
+            | Dezembro | L | X |
+
+            **Exemplo:** PETRH280 = Call de PETR4 | Agosto | Strike R$ 28,00
+
+            **Zona ideal para venda (Theta decay):**
+            - Entrar entre **30 e 45 dias** antes do vencimento
+            - Encerrar ou rolar com **7 a 10 dias** restantes
+            - Evitar manter até o vencimento com posição vendida descoberta
+            """)
