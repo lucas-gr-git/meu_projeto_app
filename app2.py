@@ -450,21 +450,21 @@ with tab_agulhadas:
                 # =====================================================
                 # CORES DO SETUP DIDI PROFIT (extraídas do .prt)
                 # =====================================================
-                COR_FUNDO      = '#222222'
-                COR_GRID       = '#333333'
-                COR_CANDLE_POS = '#9ACD32'
-                COR_CANDLE_NEG = '#CD5C5C'
-                COR_LINHA_POS  = '#6B8E23'
-                COR_LINHA_NEG  = '#8B4513'
-                COR_PRECO      = '#D2D2D2'
-                COR_SMA3       = '#C49774'
+                COR_FUNDO      = '#042042'
+                COR_GRID       = '#20324A'
+                COR_CANDLE_POS = '#00FF00'
+                COR_CANDLE_NEG = '#FF0000'
+                COR_LINHA_POS  = '#008000'
+                COR_LINHA_NEG  = '#800000'
+                COR_PRECO      = '#FFFFFF'
+                COR_SMA3       = '#FF8000'
                 COR_SMA8       = '#FFFF00'
-                COR_SMA20      = '#87CEEB'
-                COR_ADX        = '#D2D2D2'
-                COR_PDI        = '#9ACD32'
-                COR_NDI        = '#CD5C5C'
-                COR_COMPRA     = '#9ACD32'
-                COR_VENDA      = '#CD5C5C'
+                COR_SMA20      = '#00FFFF'
+                COR_ADX        = '#FFFFFF'
+                COR_PDI        = '#00FF00'
+                COR_NDI        = '#FF0000'
+                COR_COMPRA     = '#00FF00'
+                COR_VENDA      = '#FF0000'
 
                 # =====================================================
                 # INDICADORES
