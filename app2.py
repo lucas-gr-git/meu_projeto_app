@@ -468,6 +468,8 @@ with tab_agulhadas:
                 COR_DMI_ALTA   = '#00FFFF'
                 COR_DMI_BAIXA  = '#FFFF00'
                 COR_DMI_TEND   = '#FFFFFF'
+                COR_DIDI_ALTA  = '#00FFFF'
+                COR_DIDI_BAIXA = '#FFFF00'
                 # =====================================================
                 # INDICADORES
                 # =====================================================
@@ -572,8 +574,8 @@ with tab_agulhadas:
 
                 # ---- PAINEL 3: DIDI INDEX ----
                 fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.4)', dash='dot', width=1), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_SMA3,  width=1.8)), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_SMA20, width=1.8)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_DIDI_ALTA,  width=1.8)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_DIDI_BAIXA, width=1.8)), row=3, col=1)
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=np.zeros(len(df_ag_hist)), mode='lines',
                     name='Didi Normal', line=dict(color=COR_SMA8, width=1, dash='dot'), showlegend=False
