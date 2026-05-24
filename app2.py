@@ -409,7 +409,7 @@ with tab_agulhadas:
             serie = precos_fechamento[ativo].dropna()
             if len(serie) < 30: continue
             fast, slow, sma3, sma8, sma20 = calcular_didi(serie)
-            sinais = detectar_agulhada(fast, slow)
+            sinais = detectar_agulhada_pandas(df, col_fast, col_slow)
             corte = pd.Timestamp.now() - pd.Timedelta(days=dias_scanner)
             sinais_recentes = [(d, t) for d, t in sinais if d >= corte]
             if sinais_recentes:
