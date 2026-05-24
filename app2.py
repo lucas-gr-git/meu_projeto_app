@@ -190,8 +190,8 @@ df_resumo = pd.DataFrame(resultados)
 tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes, tab_inteligencia, tab_backtest = st.tabs([
     "🌐 Visão Geral do Mercado",
     "🔬 Análise Detalhada por Ativo",
-    "🎯 Agulhadas do Didi",
-    "📈 Opções — Método RCO",
+    "🎯 Agulhadas",
+    "📈 Opções",
     "🧠 Inteligência de Seleção",
     "⚙️ Motor de Backtest"
 ])
@@ -387,10 +387,10 @@ with tab_analise_individual:
             else: st.info("Nenhum provento encontrado para este ativo.")
 
 # ==============================================================================
-# ABA 3: AGULHADAS DO DIDI
+# ABA 3: AGULHADAS
 # ==============================================================================
 with tab_agulhadas:
-    st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
+    st.markdown("### 🎯 Scanner de Agulhadas")
     st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
     col_cfg1, _ = st.columns([1, 2])
     with col_cfg1:
@@ -632,7 +632,7 @@ with tab_agulhadas:
 # ABA 4: OPÇÕES
 # ==============================================================================
 with tab_opcoes:
-    st.markdown("### 📈 Opções — Método RCO (Jimmy Carvalho)")
+    st.markdown("### 📈 Opções")
     sub_calculadora, sub_scanner, sub_payoff, sub_diario = st.tabs(["📐 Calculadora de Gregas","🔍 Scanner de Oportunidades","📊 Gráfico de Payoff","📓 Diário de Operações"])
     with sub_calculadora:
         st.markdown("#### 📐 Calculadora Black-Scholes + Gregas")
