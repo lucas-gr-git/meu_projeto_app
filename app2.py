@@ -417,7 +417,7 @@ with tab_analise_individual:
 # ABA 3: AGULHADAS DO DIDI
 # ==============================================================================
 with tab_agulhadas:
-    st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
+    st.markdown("### 🎯 Scanner de Agulhadas")
     st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
     col_cfg1, _ = st.columns([1, 2])
     with col_cfg1:
@@ -516,14 +516,14 @@ with tab_agulhadas:
                 fig_bb.update_layout(template='plotly_dark', height=650, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
                 fig_bb.update_xaxes(rangeslider_visible=False)
                 st.plotly_chart(fig_bb, use_container_width=True)
-    with st.expander("📖 Como funciona o método Didi Aguiar?"):
+    with st.expander("📖 Como funciona o método?"):
         st.markdown("""**🟢 Agulhada de Compra:** Fast cruza o zero para **cima** enquanto Slow ainda está **abaixo** — SMA3 > SMA8 > SMA20.\n**🔴 Agulhada de Venda:** Fast cruza o zero para **baixo** enquanto Slow ainda está **acima** — SMA3 < SMA8 < SMA20.\n> ⚠️ Sempre confirme o sinal com outros indicadores antes de operar.""")
 
 # ==============================================================================
 # ABA 4: OPÇÕES
 # ==============================================================================
 with tab_opcoes:
-    st.markdown("### 📈 Opções — Método RCO (Jimmy Carvalho)")
+    st.markdown("### 📈 Opções")
     sub_calculadora, sub_scanner, sub_payoff, sub_diario = st.tabs(["📐 Calculadora de Gregas","🔍 Scanner de Oportunidades","📊 Gráfico de Payoff","📓 Diário de Operações (Nuvem)"])
     with sub_calculadora:
         st.markdown("#### 📐 Calculadora Black-Scholes + Gregas")
