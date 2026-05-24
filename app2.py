@@ -465,7 +465,9 @@ with tab_agulhadas:
                 COR_NDI        = '#FF0000'
                 COR_COMPRA     = '#00FF00'
                 COR_VENDA      = '#FF0000'
-
+                COR_DMI_ALTA   = '#00FFFF'
+                COR_DMI_BAIXA  = '#FFFF00'
+                COR_DMI_TEND   = '#FFFFFF'
                 # =====================================================
                 # INDICADORES
                 # =====================================================
@@ -563,7 +565,7 @@ with tab_agulhadas:
                     ), row=1, col=1)
 
                 # ---- PAINEL 2: DMI / ADX ----
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2.0)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_DMI_ALTA, width=2.0)), row=2, col=1)
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI,  width=1.5)), row=2, col=1)
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI,  width=1.5)), row=2, col=1)
                 fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.25)', dash='dot', width=1), row=2, col=1)
