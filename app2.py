@@ -460,7 +460,7 @@ with tab_agulhadas:
                 COR_SMA3       = '#FF8000'
                 COR_SMA8       = '#FFFF00'
                 COR_SMA20      = '#00FFFF'
-                COR_ADX        = '#FFFFFF'
+                COR_ADX        = '#00FFFF'
                 COR_PDI        = '#00FFFF'
                 COR_NDI        = '#FFFF00'
                 COR_COMPRA     = '#00FF00'
