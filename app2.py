@@ -470,6 +470,8 @@ with tab_agulhadas:
                 COR_DMI_TEND   = '#FFFFFF'
                 COR_DIDI_ALTA  = '#00FFFF'
                 COR_DIDI_BAIXA = '#FFFF00'
+                COR_STOCH_ALTA = '#00FFFF'
+                COR_STOCH_BAI  = '#FFFF00'
                 # =====================================================
                 # INDICADORES
                 # =====================================================
@@ -582,8 +584,8 @@ with tab_agulhadas:
                 ), row=3, col=1)
 
                 # ---- PAINEL 4: ESTOCÁSTICO ----
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_k, mode='lines', name='%K (8)', line=dict(color=COR_SMA8,  width=1.5)), row=4, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_d, mode='lines', name='%D (3)', line=dict(color=COR_PRECO, width=1.5)), row=4, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_k, mode='lines', name='%K (8)', line=dict(color=COR_STOCH_ALTA, width=1.5)), row=4, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_d, mode='lines', name='%D (3)', line=dict(color=COR_STOCH_BAI, width=1.5)), row=4, col=1)
                 fig_ag.add_hline(y=80, line=dict(color='rgba(255,0,0,0.4)',   dash='dot', width=1), row=4, col=1)
                 fig_ag.add_hline(y=20, line=dict(color='rgba(0,255,0,0.4)',   dash='dot', width=1), row=4, col=1)
                 fig_ag.update_yaxes(range=[0, 100], row=4, col=1)
