@@ -446,136 +446,190 @@ with tab_agulhadas:
                 if isinstance(df_ag_hist.columns, pd.MultiIndex): df_ag_hist.columns = df_ag_hist.columns.droplevel(1)
                 fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag = calcular_didi(df_ag_hist['Close'])
                 sinais_ag = detectar_agulhada(fast_ag, slow_ag)
-                # === CORES DO SETUP DIDI PROFIT ===
-                # Extraídas do arquivo Setup_Didi_Profit.prt (Delphi TColor BGR->RGB)
-                COR_FUNDO        = '#042042'   # Fundo Gráfico
-                COR_GRID         = '#20324A'   # Grid
-                COR_CANDLE_POS   = '#00FF00'   # Candle Positivo
-                COR_CANDLE_NEG   = '#FF0000'   # Candle Negativo
-                COR_LINHA_POS    = '#008000'   # Linha Candle Positivo
-                COR_LINHA_NEG    = '#800000'   # Linha Candle Negativo
-                COR_PRECO        = '#FFFFFF'   # Linha de Preço
-                COR_SMA3         = '#FF8000'   # Laranja — SMA3 (Rápida)
-                COR_SMA8         = '#FFFF00'   # Amarelo — SMA8 (Base)
-                COR_SMA20        = '#00FFFF'   # Ciano — SMA20 (Lenta)
-                COR_DIDI_FAST    = '#FF8000'   # Didi Rápida
-                COR_DIDI_SLOW    = '#00FFFF'   # Didi Lenta
-                COR_ADX          = '#FFFFFF'   # ADX
-                COR_PDI          = '#00FF00'   # +DI verde
-                COR_NDI          = '#FF0000'   # -DI vermelho
-                COR_COMPRA       = '#00FF00'   # Sinal compra
-                COR_VENDA        = '#FF0000'   # Sinal venda
+                # =====================================================
+                # CORES DO SETUP DIDI PROFIT (extraídas do .prt)
+                # =====================================================
+                COR_FUNDO      = '#042042'
+                COR_GRID       = '#20324A'
+                COR_CANDLE_POS = '#00FF00'
+                COR_CANDLE_NEG = '#FF0000'
+                COR_LINHA_POS  = '#008000'
+                COR_LINHA_NEG  = '#800000'
+                COR_PRECO      = '#FFFFFF'
+                COR_SMA3       = '#FF8000'
+                COR_SMA8       = '#FFFF00'
+                COR_SMA20      = '#00FFFF'
+                COR_ADX        = '#FFFFFF'
+                COR_PDI        = '#00FF00'
+                COR_NDI        = '#FF0000'
+                COR_COMPRA     = '#00FF00'
+                COR_VENDA      = '#FF0000'
 
-                # Bollinger Bands (20, 2)
-                sma20_bb = df_ag_hist['Close'].rolling(20).mean()
-                std20_bb = df_ag_hist['Close'].rolling(20).std()
-                bb_upper = sma20_bb + 2 * std20_bb
-                bb_lower = sma20_bb - 2 * std20_bb
+                # =====================================================
+                # INDICADORES
+                # =====================================================
 
-                # DMI / ADX
-                tr1_ag = df_ag_hist['High'] - df_ag_hist['Low']
-                tr2_ag = (df_ag_hist['High'] - df_ag_hist['Close'].shift(1)).abs()
-                tr3_ag = (df_ag_hist['Low'] - df_ag_hist['Close'].shift(1)).abs()
-                tr_ag = pd.concat([tr1_ag, tr2_ag, tr3_ag], axis=1).max(axis=1)
-                up_ag = df_ag_hist['High'] - df_ag_hist['High'].shift(1)
-                dn_ag = df_ag_hist['Low'].shift(1) - df_ag_hist['Low']
-                pdm_ag = pd.Series(np.where((up_ag > dn_ag) & (up_ag > 0), up_ag, 0), index=df_ag_hist.index)
-                ndm_ag = pd.Series(np.where((dn_ag > up_ag) & (dn_ag > 0), dn_ag, 0), index=df_ag_hist.index)
-                tr8_ag = tr_ag.rolling(8).sum()
-                pdi_ag = 100 * pdm_ag.rolling(8).sum() / tr8_ag
-                ndi_ag = 100 * ndm_ag.rolling(8).sum() / tr8_ag
-                adx_ag = (100 * (np.abs(pdi_ag - ndi_ag) / (pdi_ag + ndi_ag))).rolling(8).mean()
+                # Bollinger Bands — BB 8 close 2 (período 8, como no Profit)
+                sma8_bb  = df_ag_hist['Close'].rolling(8).mean()
+                std8_bb  = df_ag_hist['Close'].rolling(8).std()
+                bb_upper = sma8_bb + 2 * std8_bb
+                bb_lower = sma8_bb - 2 * std8_bb
 
-                # === GRÁFICO ESTILO PROFIT — 3 painéis ===
+                # Didi Index — Fast = SMA3-SMA8 | Slow = SMA20-SMA8
+                # já calculados: fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag
+
+                # DMI / ADX — período 8
+                tr1_ag  = df_ag_hist['High'] - df_ag_hist['Low']
+                tr2_ag  = (df_ag_hist['High'] - df_ag_hist['Close'].shift(1)).abs()
+                tr3_ag  = (df_ag_hist['Low']  - df_ag_hist['Close'].shift(1)).abs()
+                tr_ag   = pd.concat([tr1_ag, tr2_ag, tr3_ag], axis=1).max(axis=1)
+                up_ag   = df_ag_hist['High'] - df_ag_hist['High'].shift(1)
+                dn_ag   = df_ag_hist['Low'].shift(1) - df_ag_hist['Low']
+                pdm_ag  = pd.Series(np.where((up_ag > dn_ag) & (up_ag > 0), up_ag, 0), index=df_ag_hist.index)
+                ndm_ag  = pd.Series(np.where((dn_ag > up_ag) & (dn_ag > 0), dn_ag, 0), index=df_ag_hist.index)
+                tr8_ag  = tr_ag.rolling(8).sum()
+                pdi_ag  = 100 * pdm_ag.rolling(8).sum() / tr8_ag
+                ndi_ag  = 100 * ndm_ag.rolling(8).sum() / tr8_ag
+                adx_ag  = (100 * (np.abs(pdi_ag - ndi_ag) / (pdi_ag + ndi_ag))).rolling(8).mean()
+
+                # Estocástico — Stoch 8 3 (K=8, D=3)
+                low8    = df_ag_hist['Low'].rolling(8).min()
+                high8   = df_ag_hist['High'].rolling(8).max()
+                stoch_k = 100 * (df_ag_hist['Close'] - low8) / (high8 - low8)
+                stoch_d = stoch_k.rolling(3).mean()
+
+                # TRIX — período 9, sinal 4 (MA do TRIX período 4)
+                # TRIX = variação % da EMA tripla
+                ema1_t  = df_ag_hist['Close'].ewm(span=9, adjust=False).mean()
+                ema2_t  = ema1_t.ewm(span=9, adjust=False).mean()
+                ema3_t  = ema2_t.ewm(span=9, adjust=False).mean()
+                trix    = ema3_t.pct_change() * 100
+                trix_ma = trix.rolling(4).mean()
+
+                # =====================================================
+                # GRÁFICO — LAYOUT IDÊNTICO AO PROFIT
+                # Esquerda: Candlestick grande
+                # Direita: 4 painéis empilhados (DMI, Didi, Stoch, TRIX)
+                # =====================================================
                 fig_ag = make_subplots(
-                    rows=3, cols=1, shared_xaxes=True,
-                    vertical_spacing=0.03, row_heights=[0.58, 0.22, 0.20],
+                    rows=4, cols=2,
+                    shared_xaxes=True,
+                    column_widths=[0.65, 0.35],
+                    row_heights=[0.30, 0.25, 0.25, 0.20],
+                    vertical_spacing=0.02,
+                    horizontal_spacing=0.02,
                     subplot_titles=(
-                        f'{ativo_ag} — Agulhadas do Didi (Setup Profit)',
-                        'Didi Index — Rápida (SMA3-SMA8) | Lenta (SMA20-SMA8)',
-                        'DMI / ADX (8)'
+                        f'{ativo_ag} — Candlestick + BB(8,2)', 'DMI 8  8',
+                        '',                                      'Didi Index',
+                        '',                                      'Stoch 8  3',
+                        '',                                      'TRIX MA 9  4  2',
                     )
                 )
 
-                # --- PAINEL 1: CANDLESTICK + MÉDIAS + BOLLINGER + SINAIS ---
-                # Bollinger preenchimento
+                # --- COL 1: CANDLESTICK (ocupa todas as 4 linhas da coluna 1) ---
+                # Bollinger Bands
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=bb_upper, mode='lines', name='BB Superior',
-                    line=dict(color='rgba(255,165,0,0.5)', width=1), showlegend=True
+                    line=dict(color='rgba(255,255,255,0.6)', width=1), showlegend=False
                 ), row=1, col=1)
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=bb_lower, mode='lines', name='BB Inferior',
-                    line=dict(color='rgba(255,165,0,0.5)', width=1),
-                    fill='tonexty', fillcolor='rgba(255,165,0,0.04)', showlegend=True
+                    line=dict(color='rgba(255,255,255,0.6)', width=1),
+                    fill='tonexty', fillcolor='rgba(255,255,255,0.04)', showlegend=False
                 ), row=1, col=1)
 
-                # Candlestick com cores do Profit
+                # Candlestick
                 fig_ag.add_trace(go.Candlestick(
                     x=df_ag_hist.index,
                     open=df_ag_hist['Open'], high=df_ag_hist['High'],
-                    low=df_ag_hist['Low'], close=df_ag_hist['Close'],
+                    low=df_ag_hist['Low'],   close=df_ag_hist['Close'],
                     name='Preço',
                     increasing=dict(line=dict(color=COR_LINHA_POS, width=1), fillcolor=COR_CANDLE_POS),
                     decreasing=dict(line=dict(color=COR_LINHA_NEG, width=1), fillcolor=COR_CANDLE_NEG),
                 ), row=1, col=1)
 
-                # Médias SMA3, SMA8, SMA20 — cores do Profit
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma3_ag, mode='lines', name='SMA3 (Rápida)', line=dict(color=COR_SMA3, width=1.5)), row=1, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma8_ag, mode='lines', name='SMA8 (Base)',   line=dict(color=COR_SMA8, width=2.0)), row=1, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma20_ag, mode='lines', name='SMA20 (Lenta)', line=dict(color=COR_SMA20, width=1.5)), row=1, col=1)
+                # Médias SMA3, SMA8, SMA20
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma3_ag,  mode='lines', name='SMA3',  line=dict(color=COR_SMA3,  width=1.5)), row=1, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma8_ag,  mode='lines', name='SMA8',  line=dict(color=COR_SMA8,  width=2.0)), row=1, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma20_ag, mode='lines', name='SMA20', line=dict(color=COR_SMA20, width=1.5)), row=1, col=1)
 
-                # Sinais de agulhada
+                # Sinais de agulhada no candlestick
                 for data_s, tipo_s in sinais_ag:
                     if data_s not in df_ag_hist.index: continue
-                    preco_s  = float(df_ag_hist.loc[data_s, 'Low'])  if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
-                    offset   = -abs(preco_s * 0.01) if tipo_s == 'COMPRA' else abs(preco_s * 0.01)
-                    cor_s    = COR_COMPRA if tipo_s == 'COMPRA' else COR_VENDA
-                    simbolo  = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
+                    preco_s = float(df_ag_hist.loc[data_s, 'Low'])  if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
+                    offset  = -abs(preco_s * 0.015) if tipo_s == 'COMPRA' else abs(preco_s * 0.015)
+                    cor_s   = COR_COMPRA if tipo_s == 'COMPRA' else COR_VENDA
+                    sim_s   = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
                     fig_ag.add_trace(go.Scatter(
                         x=[data_s], y=[preco_s + offset], mode='markers',
-                        marker=dict(symbol=simbolo, size=16, color=cor_s, line=dict(color='white', width=1)),
+                        marker=dict(symbol=sim_s, size=14, color=cor_s, line=dict(color='white', width=1)),
                         name=f'🎯 {tipo_s}', showlegend=True
                     ), row=1, col=1)
 
-                # --- PAINEL 2: DIDI INDEX ---
-                fig_ag.add_hline(y=0, line=dict(color=COR_PRECO, dash='dot', width=1), row=2, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_DIDI_FAST, width=2)), row=2, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_DIDI_SLOW, width=2)), row=2, col=1)
+                # Linhas phantom para compartilhar eixo X na col 1 (rows 2-4 ficam vazias na col 1)
+                for r in [2, 3, 4]:
+                    fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=[None]*len(df_ag_hist),
+                        showlegend=False, hoverinfo='skip', line=dict(color='rgba(0,0,0,0)')), row=r, col=1)
 
-                # Zona colorida quando Rápida > 0 e Lenta < 0 (agulhada de compra ativa)
-                fig_ag.add_hrect(y0=0, y1=fast_ag.max() if not fast_ag.isna().all() else 1,
-                    fillcolor='rgba(0,255,0,0.03)', line_width=0, row=2, col=1)
-                fig_ag.add_hrect(y0=fast_ag.min() if not fast_ag.isna().all() else -1, y1=0,
-                    fillcolor='rgba(255,0,0,0.03)', line_width=0, row=2, col=1)
+                # --- COL 2 ROW 1: DMI / ADX ---
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2)), row=1, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI, width=1.5)), row=1, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI, width=1.5)), row=1, col=2)
+                fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.25)', dash='dot', width=1), row=1, col=2)
 
-                # --- PAINEL 3: DMI / ADX ---
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2)), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI, width=1.5)), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI, width=1.5)), row=3, col=1)
-                fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=3, col=1)
+                # --- COL 2 ROW 2: DIDI INDEX ---
+                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.4)', dash='dot', width=1), row=2, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_SMA3,  width=1.8)), row=2, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_SMA20, width=1.8)), row=2, col=2)
+                # Linha zero (SMA8 - SMA8 = 0)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=np.zeros(len(df_ag_hist)),
+                    mode='lines', name='Didi Normal', line=dict(color=COR_SMA8, width=1, dash='dot'), showlegend=False), row=2, col=2)
 
-                # === LAYOUT ESTILO PROFIT ===
+                # --- COL 2 ROW 3: ESTOCÁSTICO ---
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_k, mode='lines', name='%K', line=dict(color=COR_SMA8,  width=1.5)), row=3, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_d, mode='lines', name='%D', line=dict(color=COR_PRECO, width=1.5)), row=3, col=2)
+                fig_ag.add_hline(y=80, line=dict(color='rgba(255,0,0,0.4)',   dash='dot', width=1), row=3, col=2)
+                fig_ag.add_hline(y=20, line=dict(color='rgba(0,255,0,0.4)',   dash='dot', width=1), row=3, col=2)
+                fig_ag.update_yaxes(range=[0, 100], row=3, col=2)
+
+                # --- COL 2 ROW 4: TRIX ---
+                cores_trix = [COR_PDI if v >= 0 else COR_NDI for v in trix.fillna(0)]
+                fig_ag.add_trace(go.Bar(x=df_ag_hist.index, y=trix, name='TRIX',
+                    marker_color=cores_trix, opacity=0.7, showlegend=True), row=4, col=2)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=trix_ma, mode='lines', name='TRIX MA',
+                    line=dict(color=COR_SMA8, width=1.5)), row=4, col=2)
+                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=4, col=2)
+
+                # =====================================================
+                # LAYOUT FINAL — ESTILO PROFIT
+                # =====================================================
                 fig_ag.update_layout(
                     paper_bgcolor=COR_FUNDO,
                     plot_bgcolor=COR_FUNDO,
-                    font=dict(color=COR_PRECO, family='Tahoma', size=11),
-                    height=950,
+                    font=dict(color=COR_PRECO, family='Tahoma', size=10),
+                    height=1000,
                     showlegend=True,
-                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1,
-                        bgcolor='rgba(4,32,66,0.8)', bordercolor='#20324A', borderwidth=1),
-                    margin=dict(l=10, r=60, t=40, b=10),
+                    legend=dict(
+                        orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
+                        bgcolor='rgba(4,32,66,0.85)', bordercolor='#20324A', borderwidth=1, font=dict(size=10)
+                    ),
+                    margin=dict(l=5, r=60, t=45, b=10),
+                    barmode='relative',
                 )
+                # Eixos X
                 fig_ag.update_xaxes(
                     rangeslider_visible=False,
                     gridcolor=COR_GRID, gridwidth=1,
                     showline=True, linecolor=COR_GRID,
-                    tickfont=dict(color=COR_PRECO, size=10)
+                    tickfont=dict(color=COR_PRECO, size=9),
+                    zeroline=False,
                 )
+                # Eixos Y — todos à direita como no Profit
                 fig_ag.update_yaxes(
                     gridcolor=COR_GRID, gridwidth=1,
                     showline=True, linecolor=COR_GRID,
-                    tickfont=dict(color=COR_PRECO, size=10),
-                    side='right'
+                    tickfont=dict(color=COR_PRECO, size=9),
+                    side='right', zeroline=False,
                 )
                 st.plotly_chart(fig_ag, use_container_width=True)
     with st.expander("📖 Como funciona o método Didi Aguiar?"):
