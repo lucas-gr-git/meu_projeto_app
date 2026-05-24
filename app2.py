@@ -472,6 +472,7 @@ with tab_agulhadas:
                 COR_DIDI_BAIXA = '#FFFF00'
                 COR_STOCH_ALTA = '#00FFFF'
                 COR_STOCH_BAI  = '#FFFF00'
+                COR_TRIX_TEND  = '#FFFFFF'
                 # =====================================================
                 # INDICADORES
                 # =====================================================
@@ -598,7 +599,7 @@ with tab_agulhadas:
                 ), row=5, col=1)
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=trix_ma, mode='lines', name='TRIX MA',
-                    line=dict(color=COR_SMA8, width=1.8)
+                    line=dict(color=COR_TRIX_TEND, width=1.8)
                 ), row=5, col=1)
                 fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=5, col=1)
 
