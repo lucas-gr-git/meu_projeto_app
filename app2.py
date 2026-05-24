@@ -11,33 +11,9 @@ import xml.etree.ElementTree as ET
 import json
 from scipy.stats import norm
 import math
-import requests
-from supabase import create_client, Client
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
-
-# ==============================================================================
-# --- BANCO DE DADOS (SUPABASE) ---
-# ==============================================================================
-@st.cache_resource
-def init_connection() -> Client:
-    try:
-        url = st.secrets["SUPABASE_URL"]
-        key = st.secrets["SUPABASE_KEY"]
-        return create_client(url, key)
-    except Exception:
-        return None
-
-supabase = init_connection()
-
-# ==============================================================================
-# --- SESSÃO CUSTOMIZADA (YFINANCE) PARA EVITAR BLOQUEIO CLOUD ---
-# ==============================================================================
-session_yf = requests.Session()
-session_yf.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-})
 
 # ==============================================================================
 # --- SISTEMA DE LOGIN ---
@@ -45,8 +21,7 @@ session_yf.headers.update({
 USUARIOS_CADASTRADOS = {
     "lucas@provedor.com.br": "senha123",
     "visitante@email.com": "acesso2026",
-    "amigo@email.com": "123456",
-    "teste@teste.com.br": "senha123"
+    "amigo@email.com": "123456"
 }
 
 if "autenticado" not in st.session_state:
@@ -70,11 +45,8 @@ if not st.session_state.autenticado:
 # ==============================================================================
 # --- CÓDIGO PRINCIPAL ---
 # ==============================================================================
-st.title("🖥️ Terminal de Inteligência do Mercado")
+st.title("🖥️ Terminal Profissional de Inteligência Mercado - B3")
 st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notícias em Tempo Real.")
-
-if supabase is None:
-    st.warning("⚠️ Aviso: Conexão com Supabase falhou. O Diário de Operações não será salvo na nuvem.")
 
 ativos_setores = {
     'ITUB4.SA': 'Financeiro', 'BBDC4.SA': 'Financeiro', 'BBAS3.SA': 'Financeiro', 'SANB11.SA': 'Financeiro', 'BPAC11.SA': 'Financeiro', 'B3SA3.SA': 'Financeiro', 'BBSE3.SA': 'Financeiro', 'CXSE3.SA': 'Financeiro', 'IRBR3.SA': 'Financeiro', 'PSSA3.SA': 'Financeiro',
@@ -97,7 +69,7 @@ ativos_lista = list(ativos_setores.keys())
 def carregar_dados(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
-    dados = yf.download(ativos, start=inicio, end=hoje, session=session_yf, progress=False)
+    dados = yf.download(ativos, start=inicio, end=hoje)
     return dados['Close'], dados
 
 @st.cache_data(ttl=600)
@@ -217,8 +189,8 @@ df_resumo = pd.DataFrame(resultados)
 tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes, tab_inteligencia, tab_backtest = st.tabs([
     "🌐 Visão Geral do Mercado",
     "🔬 Análise Detalhada por Ativo",
-    "🎯 Agulhadas",
-    "📈 Opções",
+    "🎯 Agulhadas do Didi",
+    "📈 Opções — Método RCO",
     "🧠 Inteligência de Seleção",
     "⚙️ Motor de Backtest"
 ])
@@ -267,8 +239,8 @@ with tab_analise_individual:
             mapa_periodos = {"1 Mês": "1mo", "6 Meses": "6mo", "1 Ano": "1y", "2 Anos": "2y", "5 Anos": "5y"}
             periodo_selecionado = mapa_periodos[janela_tempo]
         with st.spinner("Processando histórico de 10 anos e fundamentos..."):
-            ticker_obj = yf.Ticker(ativo_buscado, session=session_yf)
-            df_hist = yf.download(ativo_buscado, period="10y", session=session_yf, progress=False)
+            ticker_obj = yf.Ticker(ativo_buscado)
+            df_hist = yf.download(ativo_buscado, period="10y")
             if df_hist.empty:
                 st.error("⚠️ Código não encontrado no banco de dados.")
             else:
@@ -352,7 +324,7 @@ with tab_analise_individual:
                 for b in benchmarks_selecionados:
                     cor = cores_bench.get(b, 'white')
                     if b in mapa_yf:
-                        df_b = yf.download(mapa_yf[b], start=data_inicio_yf, session=session_yf, progress=False)
+                        df_b = yf.download(mapa_yf[b], start=data_inicio_yf)
                         if not df_b.empty:
                             if isinstance(df_b.columns, pd.MultiIndex): df_b.columns = df_b.columns.droplevel(1)
                             df_b_plot = df_b[df_b.index >= limite_data]
@@ -417,7 +389,7 @@ with tab_analise_individual:
 # ABA 3: AGULHADAS DO DIDI
 # ==============================================================================
 with tab_agulhadas:
-    st.markdown("### 🎯 Scanner de Agulhadas")
+    st.markdown("### 🎯 Scanner de Agulhadas - Método Didi Aguiar")
     st.markdown("Varredura automática em todos os ativos monitorados. Sinais gerados pelas médias **SMA3, SMA8 e SMA20**.")
     col_cfg1, _ = st.columns([1, 2])
     with col_cfg1:
@@ -469,62 +441,152 @@ with tab_agulhadas:
         ativo_ag = st.selectbox("Selecione o ativo para ver o gráfico com os sinais:", ativos_com_sinal)
         if ativo_ag:
             ativo_ag_full = ativo_ag + '.SA'
-            df_ag_hist = yf.download(ativo_ag_full, period="1y", session=session_yf, progress=False)
+            df_ag_hist = yf.download(ativo_ag_full, period="1y")
             if not df_ag_hist.empty:
                 if isinstance(df_ag_hist.columns, pd.MultiIndex): df_ag_hist.columns = df_ag_hist.columns.droplevel(1)
                 fast_ag, slow_ag, sma3_ag, sma8_ag, sma20_ag = calcular_didi(df_ag_hist['Close'])
                 sinais_ag = detectar_agulhada(fast_ag, slow_ag)
-                fig_ag = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.04, row_heights=[0.55, 0.25, 0.20],
-                    subplot_titles=(f'Preço {ativo_ag} com Agulhadas', 'Didi Index (Fast e Slow)', 'DMI / ADX (8)'))
-                fig_ag.add_trace(go.Candlestick(x=df_ag_hist.index, open=df_ag_hist['Open'], high=df_ag_hist['High'], low=df_ag_hist['Low'], close=df_ag_hist['Close'], name='Preço', increasing_line_color='#228B22', decreasing_line_color='#B22222'), row=1, col=1)
-                for s, c, n in zip([sma3_ag, sma8_ag, sma20_ag], ['#00BFFF','#FFD700','#FF69B4'], ['SMA3','SMA8','SMA20']):
-                    fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=s, mode='lines', name=n, line=dict(color=c, width=1.2)), row=1, col=1)
-                for data_s, tipo_s in sinais_ag:
-                    if data_s not in df_ag_hist.index: continue
-                    preco_s = float(df_ag_hist.loc[data_s, 'Low']) if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
-                    cor_s = '#00FF00' if tipo_s == 'COMPRA' else '#FF0000'
-                    simbolo = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
-                    fig_ag.add_trace(go.Scatter(x=[data_s], y=[preco_s], mode='markers', marker=dict(symbol=simbolo, size=14, color=cor_s, line=dict(color='white', width=1)), name=f'Agulhada {tipo_s}', showlegend=True), row=1, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida (3)', line=dict(color='#00BFFF', width=1.5)), row=2, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta (20)', line=dict(color='#FFD700', width=1.5)), row=2, col=1)
-                fig_ag.add_hline(y=0, line=dict(color='white', dash='dot', width=1), row=2, col=1)
-                tr1_ag = df_ag_hist['High'] - df_ag_hist['Low']; tr2_ag = (df_ag_hist['High'] - df_ag_hist['Close'].shift(1)).abs(); tr3_ag = (df_ag_hist['Low'] - df_ag_hist['Close'].shift(1)).abs()
+                # === CORES DO SETUP DIDI PROFIT ===
+                # Extraídas do arquivo Setup_Didi_Profit.prt (Delphi TColor BGR->RGB)
+                COR_FUNDO        = '#042042'   # Fundo Gráfico
+                COR_GRID         = '#20324A'   # Grid
+                COR_CANDLE_POS   = '#00FF00'   # Candle Positivo
+                COR_CANDLE_NEG   = '#FF0000'   # Candle Negativo
+                COR_LINHA_POS    = '#008000'   # Linha Candle Positivo
+                COR_LINHA_NEG    = '#800000'   # Linha Candle Negativo
+                COR_PRECO        = '#FFFFFF'   # Linha de Preço
+                COR_SMA3         = '#FF8000'   # Laranja — SMA3 (Rápida)
+                COR_SMA8         = '#FFFF00'   # Amarelo — SMA8 (Base)
+                COR_SMA20        = '#00FFFF'   # Ciano — SMA20 (Lenta)
+                COR_DIDI_FAST    = '#FF8000'   # Didi Rápida
+                COR_DIDI_SLOW    = '#00FFFF'   # Didi Lenta
+                COR_ADX          = '#FFFFFF'   # ADX
+                COR_PDI          = '#00FF00'   # +DI verde
+                COR_NDI          = '#FF0000'   # -DI vermelho
+                COR_COMPRA       = '#00FF00'   # Sinal compra
+                COR_VENDA        = '#FF0000'   # Sinal venda
+
+                # Bollinger Bands (20, 2)
+                sma20_bb = df_ag_hist['Close'].rolling(20).mean()
+                std20_bb = df_ag_hist['Close'].rolling(20).std()
+                bb_upper = sma20_bb + 2 * std20_bb
+                bb_lower = sma20_bb - 2 * std20_bb
+
+                # DMI / ADX
+                tr1_ag = df_ag_hist['High'] - df_ag_hist['Low']
+                tr2_ag = (df_ag_hist['High'] - df_ag_hist['Close'].shift(1)).abs()
+                tr3_ag = (df_ag_hist['Low'] - df_ag_hist['Close'].shift(1)).abs()
                 tr_ag = pd.concat([tr1_ag, tr2_ag, tr3_ag], axis=1).max(axis=1)
-                up_ag = df_ag_hist['High'] - df_ag_hist['High'].shift(1); dn_ag = df_ag_hist['Low'].shift(1) - df_ag_hist['Low']
+                up_ag = df_ag_hist['High'] - df_ag_hist['High'].shift(1)
+                dn_ag = df_ag_hist['Low'].shift(1) - df_ag_hist['Low']
                 pdm_ag = pd.Series(np.where((up_ag > dn_ag) & (up_ag > 0), up_ag, 0), index=df_ag_hist.index)
                 ndm_ag = pd.Series(np.where((dn_ag > up_ag) & (dn_ag > 0), dn_ag, 0), index=df_ag_hist.index)
-                tr8_ag = tr_ag.rolling(8).sum(); pdi_ag = 100 * pdm_ag.rolling(8).sum() / tr8_ag; ndi_ag = 100 * ndm_ag.rolling(8).sum() / tr8_ag
+                tr8_ag = tr_ag.rolling(8).sum()
+                pdi_ag = 100 * pdm_ag.rolling(8).sum() / tr8_ag
+                ndi_ag = 100 * ndm_ag.rolling(8).sum() / tr8_ag
                 adx_ag = (100 * (np.abs(pdi_ag - ndi_ag) / (pdi_ag + ndi_ag))).rolling(8).mean()
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color='white', width=1.5)), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color='#00BFFF', width=1.5)), row=3, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color='#FFD700', width=1.5)), row=3, col=1)
-                fig_ag.update_layout(template='plotly_dark', height=850, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                fig_ag.update_xaxes(rangeslider_visible=False)
+
+                # === GRÁFICO ESTILO PROFIT — 3 painéis ===
+                fig_ag = make_subplots(
+                    rows=3, cols=1, shared_xaxes=True,
+                    vertical_spacing=0.03, row_heights=[0.58, 0.22, 0.20],
+                    subplot_titles=(
+                        f'{ativo_ag} — Agulhadas do Didi (Setup Profit)',
+                        'Didi Index — Rápida (SMA3-SMA8) | Lenta (SMA20-SMA8)',
+                        'DMI / ADX (8)'
+                    )
+                )
+
+                # --- PAINEL 1: CANDLESTICK + MÉDIAS + BOLLINGER + SINAIS ---
+                # Bollinger preenchimento
+                fig_ag.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=bb_upper, mode='lines', name='BB Superior',
+                    line=dict(color='rgba(255,165,0,0.5)', width=1), showlegend=True
+                ), row=1, col=1)
+                fig_ag.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=bb_lower, mode='lines', name='BB Inferior',
+                    line=dict(color='rgba(255,165,0,0.5)', width=1),
+                    fill='tonexty', fillcolor='rgba(255,165,0,0.04)', showlegend=True
+                ), row=1, col=1)
+
+                # Candlestick com cores do Profit
+                fig_ag.add_trace(go.Candlestick(
+                    x=df_ag_hist.index,
+                    open=df_ag_hist['Open'], high=df_ag_hist['High'],
+                    low=df_ag_hist['Low'], close=df_ag_hist['Close'],
+                    name='Preço',
+                    increasing=dict(line=dict(color=COR_LINHA_POS, width=1), fillcolor=COR_CANDLE_POS),
+                    decreasing=dict(line=dict(color=COR_LINHA_NEG, width=1), fillcolor=COR_CANDLE_NEG),
+                ), row=1, col=1)
+
+                # Médias SMA3, SMA8, SMA20 — cores do Profit
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma3_ag, mode='lines', name='SMA3 (Rápida)', line=dict(color=COR_SMA3, width=1.5)), row=1, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma8_ag, mode='lines', name='SMA8 (Base)',   line=dict(color=COR_SMA8, width=2.0)), row=1, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma20_ag, mode='lines', name='SMA20 (Lenta)', line=dict(color=COR_SMA20, width=1.5)), row=1, col=1)
+
+                # Sinais de agulhada
+                for data_s, tipo_s in sinais_ag:
+                    if data_s not in df_ag_hist.index: continue
+                    preco_s  = float(df_ag_hist.loc[data_s, 'Low'])  if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
+                    offset   = -abs(preco_s * 0.01) if tipo_s == 'COMPRA' else abs(preco_s * 0.01)
+                    cor_s    = COR_COMPRA if tipo_s == 'COMPRA' else COR_VENDA
+                    simbolo  = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
+                    fig_ag.add_trace(go.Scatter(
+                        x=[data_s], y=[preco_s + offset], mode='markers',
+                        marker=dict(symbol=simbolo, size=16, color=cor_s, line=dict(color='white', width=1)),
+                        name=f'🎯 {tipo_s}', showlegend=True
+                    ), row=1, col=1)
+
+                # --- PAINEL 2: DIDI INDEX ---
+                fig_ag.add_hline(y=0, line=dict(color=COR_PRECO, dash='dot', width=1), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_DIDI_FAST, width=2)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_DIDI_SLOW, width=2)), row=2, col=1)
+
+                # Zona colorida quando Rápida > 0 e Lenta < 0 (agulhada de compra ativa)
+                fig_ag.add_hrect(y0=0, y1=fast_ag.max() if not fast_ag.isna().all() else 1,
+                    fillcolor='rgba(0,255,0,0.03)', line_width=0, row=2, col=1)
+                fig_ag.add_hrect(y0=fast_ag.min() if not fast_ag.isna().all() else -1, y1=0,
+                    fillcolor='rgba(255,0,0,0.03)', line_width=0, row=2, col=1)
+
+                # --- PAINEL 3: DMI / ADX ---
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI, width=1.5)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI, width=1.5)), row=3, col=1)
+                fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=3, col=1)
+
+                # === LAYOUT ESTILO PROFIT ===
+                fig_ag.update_layout(
+                    paper_bgcolor=COR_FUNDO,
+                    plot_bgcolor=COR_FUNDO,
+                    font=dict(color=COR_PRECO, family='Tahoma', size=11),
+                    height=950,
+                    showlegend=True,
+                    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1,
+                        bgcolor='rgba(4,32,66,0.8)', bordercolor='#20324A', borderwidth=1),
+                    margin=dict(l=10, r=60, t=40, b=10),
+                )
+                fig_ag.update_xaxes(
+                    rangeslider_visible=False,
+                    gridcolor=COR_GRID, gridwidth=1,
+                    showline=True, linecolor=COR_GRID,
+                    tickfont=dict(color=COR_PRECO, size=10)
+                )
+                fig_ag.update_yaxes(
+                    gridcolor=COR_GRID, gridwidth=1,
+                    showline=True, linecolor=COR_GRID,
+                    tickfont=dict(color=COR_PRECO, size=10),
+                    side='right'
+                )
                 st.plotly_chart(fig_ag, use_container_width=True)
-                st.markdown("#### 📐 Bandas de Bollinger (20, 2) — Padrão Didi Aguiar")
-                sma20_bb = df_ag_hist['Close'].rolling(20).mean(); std20_bb = df_ag_hist['Close'].rolling(20).std()
-                bb_upper = sma20_bb + 2 * std20_bb; bb_lower = sma20_bb - 2 * std20_bb; bb_width = ((bb_upper - bb_lower) / sma20_bb) * 100
-                fig_bb = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.04, row_heights=[0.75, 0.25], subplot_titles=(f'Bandas de Bollinger — {ativo_ag}', 'Largura das Bandas (%)'))
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index, y=bb_upper, mode='lines', name='Banda Superior', line=dict(color='rgba(255,165,0,0.8)', width=1.5)), row=1, col=1)
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index, y=bb_lower, mode='lines', name='Banda Inferior', line=dict(color='rgba(255,165,0,0.8)', width=1.5), fill='tonexty', fillcolor='rgba(255,165,0,0.06)'), row=1, col=1)
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index, y=sma20_bb, mode='lines', name='SMA20 (Base)', line=dict(color='#FFD700', width=1.5, dash='dot')), row=1, col=1)
-                fig_bb.add_trace(go.Candlestick(x=df_ag_hist.index, open=df_ag_hist['Open'], high=df_ag_hist['High'], low=df_ag_hist['Low'], close=df_ag_hist['Close'], name='Preço', increasing_line_color='#228B22', decreasing_line_color='#B22222'), row=1, col=1)
-                toque_superior = df_ag_hist['High'] >= bb_upper; toque_inferior = df_ag_hist['Low'] <= bb_lower
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index[toque_superior], y=bb_upper[toque_superior], mode='markers', name='Toque Superior', marker=dict(symbol='circle', size=7, color='#FF4500', line=dict(color='white', width=1))), row=1, col=1)
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index[toque_inferior], y=bb_lower[toque_inferior], mode='markers', name='Toque Inferior', marker=dict(symbol='circle', size=7, color='#00FF7F', line=dict(color='white', width=1))), row=1, col=1)
-                fig_bb.add_trace(go.Scatter(x=df_ag_hist.index, y=bb_width, mode='lines', name='Largura (%)', line=dict(color='#87CEFA', width=1.5), fill='tozeroy', fillcolor='rgba(135,206,250,0.08)'), row=2, col=1)
-                fig_bb.update_layout(template='plotly_dark', height=650, legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-                fig_bb.update_xaxes(rangeslider_visible=False)
-                st.plotly_chart(fig_bb, use_container_width=True)
-    with st.expander("📖 Como funciona o método?"):
+    with st.expander("📖 Como funciona o método Didi Aguiar?"):
         st.markdown("""**🟢 Agulhada de Compra:** Fast cruza o zero para **cima** enquanto Slow ainda está **abaixo** — SMA3 > SMA8 > SMA20.\n**🔴 Agulhada de Venda:** Fast cruza o zero para **baixo** enquanto Slow ainda está **acima** — SMA3 < SMA8 < SMA20.\n> ⚠️ Sempre confirme o sinal com outros indicadores antes de operar.""")
 
 # ==============================================================================
 # ABA 4: OPÇÕES
 # ==============================================================================
 with tab_opcoes:
-    st.markdown("### 📈 Opções")
-    sub_calculadora, sub_scanner, sub_payoff, sub_diario = st.tabs(["📐 Calculadora de Gregas","🔍 Scanner de Oportunidades","📊 Gráfico de Payoff","📓 Diário de Operações (Nuvem)"])
+    st.markdown("### 📈 Opções — Método RCO (Jimmy Carvalho)")
+    sub_calculadora, sub_scanner, sub_payoff, sub_diario = st.tabs(["📐 Calculadora de Gregas","🔍 Scanner de Oportunidades","📊 Gráfico de Payoff","📓 Diário de Operações"])
     with sub_calculadora:
         st.markdown("#### 📐 Calculadora Black-Scholes + Gregas")
         col_c1, col_c2, col_c3 = st.columns(3)
@@ -536,7 +598,7 @@ with tab_opcoes:
                 ativo_bs = calc_ativo if calc_ativo.endswith('.SA') else calc_ativo + '.SA'
                 with st.spinner("Buscando preço e volatilidade..."):
                     try:
-                        df_bs = yf.download(ativo_bs, period="6mo", session=session_yf, progress=False)
+                        df_bs = yf.download(ativo_bs, period="6mo", progress=False)
                         if isinstance(df_bs.columns, pd.MultiIndex): df_bs.columns = df_bs.columns.droplevel(1)
                         S = float(df_bs['Close'].iloc[-1]); vol_h = volatilidade_historica(df_bs['Close'])
                         sigma = (calc_vol_manual / 100) if calc_vol_manual > 0 else vol_h
@@ -642,75 +704,26 @@ with tab_opcoes:
             fig_pay.add_hrect(y0=min(payoff), y1=0, fillcolor="rgba(178,34,34,0.08)", line_width=0); fig_pay.add_hrect(y0=0, y1=max(payoff), fillcolor="rgba(34,139,34,0.08)", line_width=0)
             fig_pay.update_layout(template='plotly_dark', height=500, xaxis_title="Preço do Ativo no Vencimento (R$)", yaxis_title="Resultado (R$)", title=f"Payoff — {pay_estrategia}"); st.plotly_chart(fig_pay, use_container_width=True)
             st.info(f"📌 {descricao}")
-    
-    # -------------------------------------------------------------------------
-    # DIÁRIO DE OPERAÇÕES C/ SUPABASE
-    # -------------------------------------------------------------------------
     with sub_diario:
-        st.markdown("#### 📓 Diário de Operações — Salvo na Nuvem (Supabase)")
-        
-        with st.expander("➕ Registrar Nova Operação", expanded=False):
+        st.markdown("#### 📓 Diário de Operações com Opções")
+        if 'operacoes' not in st.session_state: st.session_state.operacoes = []
+        with st.expander("➕ Registrar Nova Operação", expanded=True):
             d1, d2, d3, d4 = st.columns(4)
-            with d1:
-                op_data      = st.date_input("Data de Entrada:", key="op_data")
-                op_ativo     = st.text_input("Ativo (Ex: PETR4):", key="op_ativo").upper()
-                op_estrategia= st.selectbox("Estratégia:", ["Venda Coberta","Venda de Put","Compra de Call","Compra de Put","Trava de Alta","Trava de Baixa","Wheel","Outra"], key="op_est")
-            with d2:
-                op_serie     = st.text_input("Série (Ex: PETRH280):", key="op_serie").upper()
-                op_tipo      = st.selectbox("Tipo:", ["Call","Put"], key="op_tipo")
-                op_direcao   = st.selectbox("Direção:", ["Venda","Compra"], key="op_dir")
-            with d3:
-                op_strike    = st.number_input("Strike (R$):", min_value=0.0, value=30.0, step=0.5, key="op_strike")
-                op_premio    = st.number_input("Prêmio (R$):", min_value=0.0, value=0.80, step=0.01, key="op_prem")
-                op_qtd       = st.number_input("Quantidade (lotes):", min_value=1, value=1, step=1, key="op_qtd")
-            with d4:
-                op_vcto      = st.date_input("Vencimento:", key="op_vcto", value=datetime.today() + timedelta(days=30))
-                op_resultado = st.number_input("Resultado Final (R$):", value=0.0, step=1.0, key="op_res")
-                op_status    = st.selectbox("Status:", ["Aberta","Encerrada","Exercida"], key="op_status")
-            op_obs = st.text_area("Motivo da entrada:", key="op_obs", height=80)
-
-            if st.button("💾 Salvar Operação na Nuvem", key="btn_salvar_db"):
-                if supabase:
-                    nova_operacao = {
-                        'data_entrada': op_data.strftime('%Y-%m-%d'), 'ativo': op_ativo, 'estrategia': op_estrategia,
-                        'serie': op_serie, 'tipo': op_tipo, 'direcao': op_direcao, 'strike': float(op_strike),
-                        'premio': float(op_premio), 'qtd': int(op_qtd), 'vencimento': op_vcto.strftime('%Y-%m-%d'),
-                        'resultado': float(op_resultado), 'status': op_status, 'obs': op_obs, 'valor_operacao': float(op_premio * op_qtd * 100)
-                    }
-                    try:
-                        supabase.table("operacoes").insert(nova_operacao).execute()
-                        st.success("✅ Operação salva com sucesso!")
-                    except Exception as e: st.error(f"Erro ao salvar no banco: {e}")
-                else: st.error("⚠️ Supabase não configurado nos Secrets do Streamlit.")
-
-        st.markdown("##### 📋 Histórico de Operações Salvas")
-        if supabase:
-            try:
-                response = supabase.table("operacoes").select("*").execute()
-                dados_banco = response.data
-                if dados_banco:
-                    df_ops = pd.DataFrame(dados_banco)
-                    if 'id' in df_ops.columns: df_ops = df_ops.sort_values(by='id', ascending=False)
-                    df_ops['data_entrada'] = pd.to_datetime(df_ops['data_entrada']).dt.strftime('%d/%m/%Y')
-                    df_ops['vencimento'] = pd.to_datetime(df_ops['vencimento']).dt.strftime('%d/%m/%Y')
-                    
-                    st.dataframe(df_ops.drop(columns=['id', 'created_at'], errors='ignore'), use_container_width=True, hide_index=True)
-                    
-                    total_ops = len(df_ops)
-                    ops_abertas = len(df_ops[df_ops['status'] == 'Aberta'])
-                    resultado_total = df_ops['resultado'].sum()
-                    premio_total = df_ops['valor_operacao'].sum()
-
-                    m1, m2, m3, m4 = st.columns(4)
-                    m1.metric("📊 Total de Operações", total_ops)
-                    m2.metric("🟡 Operações Abertas", ops_abertas)
-                    m3.metric("💰 Prêmios (R$)", f"R$ {premio_total:,.2f}")
-                    m4.metric("📈 Resultado Realizado (R$)", f"R$ {resultado_total:,.2f}", delta=f"R$ {resultado_total:,.2f}")
-                else:
-                    st.info("Nenhuma operação registrada no banco de dados.")
-            except Exception as e: st.error(f"Erro ao ler banco de dados: {e}")
-        else:
-            st.warning("Sem conexão com o Supabase. Histórico indisponível.")
+            with d1: op_data = st.date_input("Data de Entrada:", key="op_data"); op_ativo = st.text_input("Ativo Objeto:", key="op_ativo").upper(); op_estrategia = st.selectbox("Estratégia:", ["Venda Coberta","Venda de Put","Compra de Call","Compra de Put","Trava de Alta","Trava de Baixa","Wheel","Outra"], key="op_est")
+            with d2: op_serie = st.text_input("Série da Opção:", key="op_serie").upper(); op_tipo = st.selectbox("Tipo:", ["Call","Put"], key="op_tipo"); op_direcao = st.selectbox("Direção:", ["Venda","Compra"], key="op_dir")
+            with d3: op_strike = st.number_input("Strike (R$):", min_value=0.0, value=30.0, step=0.5, key="op_strike"); op_premio = st.number_input("Prêmio (R$):", min_value=0.0, value=0.80, step=0.01, key="op_prem"); op_qtd = st.number_input("Quantidade (lotes):", min_value=1, value=1, step=1, key="op_qtd")
+            with d4: op_vcto = st.date_input("Vencimento:", key="op_vcto", value=datetime.today() + timedelta(days=30)); op_resultado = st.number_input("Resultado Final (R$):", value=0.0, step=1.0, key="op_res"); op_status = st.selectbox("Status:", ["Aberta","Encerrada","Exercida"], key="op_status")
+            op_obs = st.text_area("Observações:", key="op_obs", height=80)
+            if st.button("💾 Salvar Operação", key="btn_salvar"):
+                st.session_state.operacoes.append({'Data': op_data.strftime('%d/%m/%Y'), 'Ativo': op_ativo, 'Estratégia': op_estrategia, 'Série': op_serie, 'Tipo': op_tipo, 'Direção': op_direcao, 'Strike': op_strike, 'Prêmio': op_premio, 'Qtd': op_qtd, 'Vencimento': op_vcto.strftime('%d/%m/%Y'), 'Resultado': op_resultado, 'Status': op_status, 'Obs': op_obs, 'Valor Operação': round(op_premio * op_qtd * 100, 2)})
+                st.success("✅ Operação registrada com sucesso!")
+        if st.session_state.operacoes:
+            df_ops = pd.DataFrame(st.session_state.operacoes)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("📊 Total de Operações", len(df_ops)); m2.metric("🟡 Operações Abertas", len(df_ops[df_ops['Status']=='Aberta']))
+            m3.metric("💰 Prêmios Arrecadados", f"R$ {df_ops['Valor Operação'].sum():,.2f}"); m4.metric("📈 Resultado Realizado", f"R$ {df_ops['Resultado'].sum():,.2f}")
+            st.dataframe(df_ops, use_container_width=True, hide_index=True)
+            if st.button("🗑️ Limpar Operações", key="btn_limpar"): st.session_state.operacoes = []; st.rerun()
 
 # ==============================================================================
 # ABA 5: INTELIGÊNCIA DE SELEÇÃO
@@ -785,7 +798,7 @@ with tab_inteligencia:
                             s_tendencia = 25 if (acima_50 and acima_200) else 12 if acima_50 else 3; s_iv_rank = min(iv_rank_s / 100 * 25, 25); s_rsi = 20 if 45 < rsi_s < 70 else 8; s_volatilidade = 20 if 25 < vol_at < 60 else 8; s_liquidez = min(vol_diaria * 2, 10)
                         score_total = round(min(s_tendencia + s_iv_rank + s_rsi + s_volatilidade + s_liquidez, 100), 1)
                         estrelas = "⭐⭐⭐⭐⭐" if score_total >= 75 else "⭐⭐⭐⭐" if score_total >= 60 else "⭐⭐⭐" if score_total >= 45 else "⭐⭐" if score_total >= 30 else "⭐"
-                        
+            
                         tendencia_txt = "Alta Forte" if (acima_50 and acima_200) else "Alta Parcial" if acima_50 else "Baixa"
                         score_resultados.append({"Ativo": ativo.replace(".SA",""), "Setor": ativos_setores[ativo], "Score": score_total, "Estrelas": estrelas, "Preco": round(S, 2), "Tendencia": tendencia_txt, "RSI": round(rsi_s, 1), "IV Rank (%)": round(iv_rank_s, 1), "Vol Anual (%)": round(vol_at, 1), "Pts Tendencia": round(s_tendencia, 1), "Pts IV Rank": round(s_iv_rank, 1), "Pts RSI": round(s_rsi, 1), "Pts Vol": round(s_volatilidade, 1), "Pts Liquidez": round(s_liquidez, 1)})
                     except: continue
@@ -877,6 +890,9 @@ with tab_backtest:
         elif estrategia == "RSI + Tendencia Combinada":
             df.loc[(df["RSI"] < params.get("rsi_vend", 30)) & (df["Close"] > df["SMA200"]), "sinal"] = 1
             df.loc[(df["RSI"] > params.get("rsi_comp", 70)) & (df["Close"] < df["SMA200"]), "sinal"] = -1
+        elif estrategia == "Venda Coberta Simulada":
+            otm_pct = params.get("otm", 5) / 100; dias_vcto = params.get("dias_vcto", 30); r_bt = 0.1475
+            df.loc[df["RSI"] < 65, "sinal"] = 1  # entra quando nao sobrecomprado
 
         capital = params.get("capital", 10000.0); stop_pct = params.get("stop", 5.0) / 100; alvo_pct = params.get("alvo", 10.0) / 100
         posicao = 0; preco_entrada = 0.0; trades = []; capital_hist = []
@@ -935,7 +951,7 @@ with tab_backtest:
             ativo_bt = bt_ativo if bt_ativo.endswith(".SA") else bt_ativo + ".SA"
             periodo_map = {"1 ano":"1y","2 anos":"2y","3 anos":"3y","5 anos":"5y","10 anos":"10y"}
             with st.spinner(f"Rodando backtest de {bt_estrategia} em {bt_ativo}..."):
-                df_bt_raw = yf.download(ativo_bt, period=periodo_map[bt_periodo], session=session_yf, progress=False)
+                df_bt_raw = yf.download(ativo_bt, period=periodo_map[bt_periodo], progress=False)
                 if df_bt_raw.empty: st.error("Ativo nao encontrado.")
                 else:
                     if isinstance(df_bt_raw.columns, pd.MultiIndex): df_bt_raw.columns = df_bt_raw.columns.droplevel(1)
@@ -1029,21 +1045,21 @@ with tab_backtest:
                 with st.spinner("Rodando comparativo..."):
                     for idx, ativo_cmp in enumerate(cmp_ativos[:10]):
                         try:
-                            df_c = yf.download(ativo_cmp + ".SA", period=periodo_map[cmp_per], session=session_yf, progress=False)
+                            df_c = yf.download(ativo_cmp + ".SA", period=periodo_map[cmp_per], progress=False)
                             if df_c.empty: continue
-                            if isinstance(df_c.columns, pd.MultiIndex): df_c.columns = [col[0] for col in df_c.columns]
+                            if isinstance(df_c.columns, pd.MultiIndex): df_c.columns = df_c.columns.droplevel(1)
                             _, df_cap_c, met_c, _ = rodar_backtest(df_c, cmp_est, params_cmp)
                             cap_n = (df_cap_c["Capital"] / cmp_cap - 1) * 100
                             fig_cmp.add_trace(go.Scatter(x=df_cap_c.index, y=cap_n, mode="lines", name=ativo_cmp, line=dict(color=cores_cmp[idx % len(cores_cmp)], width=2)))
                             cmp_resultados.append({"Ativo": ativo_cmp, "Retorno Estrat (%)": met_c["Retorno Estrategia (%)"], "Retorno BH (%)": met_c["Retorno BH (%)"], "Taxa Acerto (%)": met_c["Taxa Acerto (%)"], "Trades": met_c["Total Trades"], "Capital Final (R$)": met_c["Capital Final"], "Drawdown (%)": met_c["Drawdown Maximo (%)"]})
                         except: continue
-                fig_cmp.add_hline(y=0, line=dict(color="gray", dash="dot")); fig_cmp.update_layout(template="plotly_dark", height=500, yaxis_title="Retorno Acumulado (%)", title=f"Comparativo — {cmp_est}"); st.plotly_chart(fig_cmp, use_container_width=True)
-                if cmp_resultados:
-                    df_cmp_r = pd.DataFrame(cmp_resultados).sort_values("Retorno Estrat (%)", ascending=False); st.dataframe(df_cmp_r, use_container_width=True, hide_index=True)
-                    fig_bar = go.Figure(); cores_bar = ["#228B22" if v >= 0 else "#B22222" for v in df_cmp_r["Retorno Estrat (%)"]]
-                    fig_bar.add_trace(go.Bar(x=df_cmp_r["Ativo"], y=df_cmp_r["Retorno Estrat (%)"], marker_color=cores_bar, name="Estrategia", text=df_cmp_r["Retorno Estrat (%)"].round(1), textposition="outside"))
-                    fig_bar.add_trace(go.Bar(x=df_cmp_r["Ativo"], y=df_cmp_r["Retorno BH (%)"], marker_color="rgba(255,255,255,0.3)", name="Buy & Hold"))
-                    fig_bar.update_layout(template="plotly_dark", height=400, barmode="group", yaxis_title="Retorno (%)", title="Estrategia vs Buy & Hold"); st.plotly_chart(fig_bar, use_container_width=True)
+                    fig_cmp.add_hline(y=0, line=dict(color="gray", dash="dot")); fig_cmp.update_layout(template="plotly_dark", height=500, yaxis_title="Retorno Acumulado (%)", title=f"Comparativo — {cmp_est}"); st.plotly_chart(fig_cmp, use_container_width=True)
+                    if cmp_resultados:
+                        df_cmp_r = pd.DataFrame(cmp_resultados).sort_values("Retorno Estrat (%)", ascending=False); st.dataframe(df_cmp_r, use_container_width=True, hide_index=True)
+                        fig_bar = go.Figure(); cores_bar = ["#228B22" if v >= 0 else "#B22222" for v in df_cmp_r["Retorno Estrat (%)"]]
+                        fig_bar.add_trace(go.Bar(x=df_cmp_r["Ativo"], y=df_cmp_r["Retorno Estrat (%)"], marker_color=cores_bar, name="Estrategia", text=df_cmp_r["Retorno Estrat (%)"].round(1), textposition="outside"))
+                        fig_bar.add_trace(go.Bar(x=df_cmp_r["Ativo"], y=df_cmp_r["Retorno BH (%)"], marker_color="rgba(255,255,255,0.3)", name="Buy & Hold"))
+                        fig_bar.update_layout(template="plotly_dark", height=400, barmode="group", yaxis_title="Retorno (%)", title="Estrategia vs Buy & Hold"); st.plotly_chart(fig_bar, use_container_width=True)
 
     with sub_bt_opcoes:
         st.markdown("#### 📈 Backtest de Opcoes — Venda Coberta e Venda de Put")
@@ -1056,10 +1072,10 @@ with tab_backtest:
             ativo_op = op_bt_ativo if op_bt_ativo.endswith(".SA") else op_bt_ativo + ".SA"
             periodo_map2 = {"1 ano":"1y","2 anos":"2y","3 anos":"3y","5 anos":"5y"}
             with st.spinner("Simulando ciclos de opcoes no historico..."):
-                df_op = yf.download(ativo_op, period=periodo_map2[op_bt_per], session=session_yf, progress=False)
+                df_op = yf.download(ativo_op, period=periodo_map2[op_bt_per], progress=False)
                 if df_op.empty: st.error("Ativo nao encontrado.")
                 else:
-                    if isinstance(df_op.columns, pd.MultiIndex): df_op.columns = [col[0] for col in df_op.columns]
+                    if isinstance(df_op.columns, pd.MultiIndex): df_op.columns = df_op.columns.droplevel(1)
                     capital_op = op_bt_cap; r_op = op_bt_taxa / 100; T_op = op_bt_dias / 365; ciclos = []; capital_hist_op = []
                     indices = list(range(0, len(df_op) - op_bt_dias, op_bt_dias))
                     for idx_c in indices:
@@ -1120,9 +1136,9 @@ with tab_backtest:
             with st.spinner("Rodando backtest da Agulhada em todos os ativos..."):
                 for ativo_ag_bt in ativos_lista:
                     try:
-                        df_ag_raw = yf.download(ativo_ag_bt, period=periodo_map3[ag_bt_per], session=session_yf, progress=False)
+                        df_ag_raw = yf.download(ativo_ag_bt, period=periodo_map3[ag_bt_per], progress=False)
                         if df_ag_raw.empty or len(df_ag_raw) < 50: continue
-                        if isinstance(df_ag_raw.columns, pd.MultiIndex): df_ag_raw.columns = [col[0] for col in df_ag_raw.columns]
+                        if isinstance(df_ag_raw.columns, pd.MultiIndex): df_ag_raw.columns = df_ag_raw.columns.droplevel(1)
                         _, _, met_ag, _ = rodar_backtest(df_ag_raw, "Agulhada do Didi", params_ag)
                         ag_resultados.append({"Ativo": ativo_ag_bt.replace(".SA",""), "Setor": ativos_setores[ativo_ag_bt], "Retorno (%)": met_ag["Retorno Estrategia (%)"], "Buy & Hold (%)": met_ag["Retorno BH (%)"], "Vantagem (%)": round(met_ag["Retorno Estrategia (%)"] - met_ag["Retorno BH (%)"], 2), "Taxa Acerto (%)": met_ag["Taxa Acerto (%)"], "Trades": met_ag["Total Trades"], "Capital Final (R$)": met_ag["Capital Final"], "Drawdown (%)": met_ag["Drawdown Maximo (%)"]})
                     except: continue
