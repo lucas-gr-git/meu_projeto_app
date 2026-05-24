@@ -217,8 +217,8 @@ df_resumo = pd.DataFrame(resultados)
 tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes, tab_inteligencia, tab_backtest = st.tabs([
     "🌐 Visão Geral do Mercado",
     "🔬 Análise Detalhada por Ativo",
-    "🎯 Agulhadas do Didi",
-    "📈 Opções — Método RCO",
+    "🎯 Agulhadas",
+    "📈 Opções",
     "🧠 Inteligência de Seleção",
     "⚙️ Motor de Backtest"
 ])
