@@ -456,7 +456,7 @@ with tab_agulhadas:
                 COR_CANDLE_NEG = '#FF0000'
                 COR_LINHA_POS  = '#008000'
                 COR_LINHA_NEG  = '#800000'
-                COR_PRECO      = '#00FFFF'
+                COR_PRECO      = '#FFFF00'
                 COR_SMA3       = '#FF8000'
                 COR_SMA8       = '#FFFF00'
                 COR_SMA20      = '#00FFFF'
