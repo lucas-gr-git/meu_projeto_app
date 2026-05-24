@@ -566,8 +566,8 @@ with tab_agulhadas:
 
                 # ---- PAINEL 2: DMI / ADX ----
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_DMI_TEND, width=2.0)), row=2, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI,  width=1.5)), row=2, col=1)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI,  width=1.5)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_DMI_ALTA,  width=1.5)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_DMI_BAIXA,  width=1.5)), row=2, col=1)
                 fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.25)', dash='dot', width=1), row=2, col=1)
 
                 # ---- PAINEL 3: DIDI INDEX ----
