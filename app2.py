@@ -21,7 +21,8 @@ st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
 USUARIOS_CADASTRADOS = {
     "lucas@provedor.com.br": "senha123",
     "visitante@email.com": "acesso2026",
-    "amigo@email.com": "123456"
+    "amigo@email.com": "123456",
+    "teste@teste.com.br": "senha123"
 }
 
 if "autenticado" not in st.session_state:
