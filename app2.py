@@ -997,7 +997,7 @@ with tab_backtest:
                                     resultado = -(K - S_s) + premio_put + premio_call
                                 else: resultado = premio_put
                                 capital_op += resultado; tipo_ciclo = "Wheel"
-                            ciclos.append({"Data Entrada": data_e.strftime("%d/%m/%Y"), "Data Saida": data_s.strftime("%d/%m/%Y"), "Preco Entrada": round(S_e, 2), "Preco Saida": round(S_s, 2), "Strike": round(K, 2), "Premio (R$)": round(premio if op_bt_estrat != "Wheel" else premio_put, 4), "Resultado (R$)": round(resultado, 4), "Exercido": "Sim" if exercido_put if op_bt_estrat == "Wheel" else exercido else "Nao", "Capital": round(capital_op, 2)})
+                            ciclos.append({"Data Entrada": data_e.strftime("%d/%m/%Y"), "Data Saida": data_s.strftime("%d/%m/%Y"), "Preco Entrada": round(S_e, 2), "Preco Saida": round(S_s, 2), "Strike": round(K, 2), "Premio (R$)": round(premio if op_bt_estrat != "Wheel" else premio_put, 4), "Resultado (R$)": round(resultado, 4), "Exercido": "Sim" if (exercido_put if op_bt_estrat == "Wheel" else exercido) else "Nao", "Capital": round(capital_op, 2)})
                         except: continue
                     df_ciclos = pd.DataFrame(ciclos)
                     if not df_ciclos.empty:
