@@ -70,7 +70,7 @@ if not st.session_state.autenticado:
 # ==============================================================================
 # --- CÓDIGO PRINCIPAL ---
 # ==============================================================================
-st.title("🖥️ Terminal Profissional de Inteligência Mercado - B3")
+st.title("🖥️ Terminal de Inteligência do Mercado")
 st.markdown("Monitoramento Avançado, Análise Técnica, Fundamentalista e Notícias em Tempo Real.")
 
 if supabase is None:
