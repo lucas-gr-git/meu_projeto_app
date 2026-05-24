@@ -507,38 +507,37 @@ with tab_agulhadas:
                 trix_ma = trix.rolling(4).mean()
 
                 # =====================================================
-                # GRÁFICO — LAYOUT IDÊNTICO AO PROFIT
-                # Esquerda: Candlestick grande
-                # Direita: 4 painéis empilhados (DMI, Didi, Stoch, TRIX)
+                # GRÁFICO — PAINÉIS EMPILHADOS (ESTILO PROFIT)
+                # 1. Candlestick + BB(8,2) + Médias + Sinais
+                # 2. DMI 8 8
+                # 3. Didi Index
+                # 4. Stoch 8 3
+                # 5. TRIX MA 9 4 2
                 # =====================================================
                 fig_ag = make_subplots(
-                    rows=4, cols=2,
+                    rows=5, cols=1,
                     shared_xaxes=True,
-                    column_widths=[0.65, 0.35],
-                    row_heights=[0.30, 0.25, 0.25, 0.20],
+                    row_heights=[0.40, 0.15, 0.15, 0.15, 0.15],
                     vertical_spacing=0.02,
-                    horizontal_spacing=0.02,
                     subplot_titles=(
-                        f'{ativo_ag} — Candlestick + BB(8,2)', 'DMI 8  8',
-                        '',                                      'Didi Index',
-                        '',                                      'Stoch 8  3',
-                        '',                                      'TRIX MA 9  4  2',
+                        f'{ativo_ag}  —  Candlestick + BB(8,2) + Agulhadas',
+                        'DMI  8  8',
+                        'Didi Index',
+                        'Stoch  8  3',
+                        'TRIX  MA  9  4  2',
                     )
                 )
 
-                # --- COL 1: CANDLESTICK (ocupa todas as 4 linhas da coluna 1) ---
-                # Bollinger Bands
+                # ---- PAINEL 1: CANDLESTICK + BB + MÉDIAS + SINAIS ----
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=bb_upper, mode='lines', name='BB Superior',
-                    line=dict(color='rgba(255,255,255,0.6)', width=1), showlegend=False
+                    line=dict(color='rgba(255,255,255,0.55)', width=1), showlegend=True
                 ), row=1, col=1)
                 fig_ag.add_trace(go.Scatter(
                     x=df_ag_hist.index, y=bb_lower, mode='lines', name='BB Inferior',
-                    line=dict(color='rgba(255,255,255,0.6)', width=1),
-                    fill='tonexty', fillcolor='rgba(255,255,255,0.04)', showlegend=False
+                    line=dict(color='rgba(255,255,255,0.55)', width=1),
+                    fill='tonexty', fillcolor='rgba(255,255,255,0.04)', showlegend=True
                 ), row=1, col=1)
-
-                # Candlestick
                 fig_ag.add_trace(go.Candlestick(
                     x=df_ag_hist.index,
                     open=df_ag_hist['Open'], high=df_ag_hist['High'],
@@ -547,16 +546,12 @@ with tab_agulhadas:
                     increasing=dict(line=dict(color=COR_LINHA_POS, width=1), fillcolor=COR_CANDLE_POS),
                     decreasing=dict(line=dict(color=COR_LINHA_NEG, width=1), fillcolor=COR_CANDLE_NEG),
                 ), row=1, col=1)
-
-                # Médias SMA3, SMA8, SMA20
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma3_ag,  mode='lines', name='SMA3',  line=dict(color=COR_SMA3,  width=1.5)), row=1, col=1)
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma8_ag,  mode='lines', name='SMA8',  line=dict(color=COR_SMA8,  width=2.0)), row=1, col=1)
                 fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=sma20_ag, mode='lines', name='SMA20', line=dict(color=COR_SMA20, width=1.5)), row=1, col=1)
-
-                # Sinais de agulhada no candlestick
                 for data_s, tipo_s in sinais_ag:
                     if data_s not in df_ag_hist.index: continue
-                    preco_s = float(df_ag_hist.loc[data_s, 'Low'])  if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
+                    preco_s = float(df_ag_hist.loc[data_s, 'Low']) if tipo_s == 'COMPRA' else float(df_ag_hist.loc[data_s, 'High'])
                     offset  = -abs(preco_s * 0.015) if tipo_s == 'COMPRA' else abs(preco_s * 0.015)
                     cor_s   = COR_COMPRA if tipo_s == 'COMPRA' else COR_VENDA
                     sim_s   = 'triangle-up' if tipo_s == 'COMPRA' else 'triangle-down'
@@ -566,57 +561,55 @@ with tab_agulhadas:
                         name=f'🎯 {tipo_s}', showlegend=True
                     ), row=1, col=1)
 
-                # Linhas phantom para compartilhar eixo X na col 1 (rows 2-4 ficam vazias na col 1)
-                for r in [2, 3, 4]:
-                    fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=[None]*len(df_ag_hist),
-                        showlegend=False, hoverinfo='skip', line=dict(color='rgba(0,0,0,0)')), row=r, col=1)
+                # ---- PAINEL 2: DMI / ADX ----
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2.0)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI,  width=1.5)), row=2, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI,  width=1.5)), row=2, col=1)
+                fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.25)', dash='dot', width=1), row=2, col=1)
 
-                # --- COL 2 ROW 1: DMI / ADX ---
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=adx_ag, mode='lines', name='ADX', line=dict(color=COR_ADX, width=2)), row=1, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=pdi_ag, mode='lines', name='+DI', line=dict(color=COR_PDI, width=1.5)), row=1, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=ndi_ag, mode='lines', name='-DI', line=dict(color=COR_NDI, width=1.5)), row=1, col=2)
-                fig_ag.add_hline(y=25, line=dict(color='rgba(255,255,255,0.25)', dash='dot', width=1), row=1, col=2)
+                # ---- PAINEL 3: DIDI INDEX ----
+                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.4)', dash='dot', width=1), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_SMA3,  width=1.8)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_SMA20, width=1.8)), row=3, col=1)
+                fig_ag.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=np.zeros(len(df_ag_hist)), mode='lines',
+                    name='Didi Normal', line=dict(color=COR_SMA8, width=1, dash='dot'), showlegend=False
+                ), row=3, col=1)
 
-                # --- COL 2 ROW 2: DIDI INDEX ---
-                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.4)', dash='dot', width=1), row=2, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=fast_ag, mode='lines', name='Didi Rápida', line=dict(color=COR_SMA3,  width=1.8)), row=2, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=slow_ag, mode='lines', name='Didi Lenta',  line=dict(color=COR_SMA20, width=1.8)), row=2, col=2)
-                # Linha zero (SMA8 - SMA8 = 0)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=np.zeros(len(df_ag_hist)),
-                    mode='lines', name='Didi Normal', line=dict(color=COR_SMA8, width=1, dash='dot'), showlegend=False), row=2, col=2)
+                # ---- PAINEL 4: ESTOCÁSTICO ----
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_k, mode='lines', name='%K (8)', line=dict(color=COR_SMA8,  width=1.5)), row=4, col=1)
+                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_d, mode='lines', name='%D (3)', line=dict(color=COR_PRECO, width=1.5)), row=4, col=1)
+                fig_ag.add_hline(y=80, line=dict(color='rgba(255,0,0,0.4)',   dash='dot', width=1), row=4, col=1)
+                fig_ag.add_hline(y=20, line=dict(color='rgba(0,255,0,0.4)',   dash='dot', width=1), row=4, col=1)
+                fig_ag.update_yaxes(range=[0, 100], row=4, col=1)
 
-                # --- COL 2 ROW 3: ESTOCÁSTICO ---
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_k, mode='lines', name='%K', line=dict(color=COR_SMA8,  width=1.5)), row=3, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=stoch_d, mode='lines', name='%D', line=dict(color=COR_PRECO, width=1.5)), row=3, col=2)
-                fig_ag.add_hline(y=80, line=dict(color='rgba(255,0,0,0.4)',   dash='dot', width=1), row=3, col=2)
-                fig_ag.add_hline(y=20, line=dict(color='rgba(0,255,0,0.4)',   dash='dot', width=1), row=3, col=2)
-                fig_ag.update_yaxes(range=[0, 100], row=3, col=2)
-
-                # --- COL 2 ROW 4: TRIX ---
+                # ---- PAINEL 5: TRIX ----
                 cores_trix = [COR_PDI if v >= 0 else COR_NDI for v in trix.fillna(0)]
-                fig_ag.add_trace(go.Bar(x=df_ag_hist.index, y=trix, name='TRIX',
-                    marker_color=cores_trix, opacity=0.7, showlegend=True), row=4, col=2)
-                fig_ag.add_trace(go.Scatter(x=df_ag_hist.index, y=trix_ma, mode='lines', name='TRIX MA',
-                    line=dict(color=COR_SMA8, width=1.5)), row=4, col=2)
-                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=4, col=2)
+                fig_ag.add_trace(go.Bar(
+                    x=df_ag_hist.index, y=trix, name='TRIX',
+                    marker_color=cores_trix, opacity=0.75, showlegend=True
+                ), row=5, col=1)
+                fig_ag.add_trace(go.Scatter(
+                    x=df_ag_hist.index, y=trix_ma, mode='lines', name='TRIX MA',
+                    line=dict(color=COR_SMA8, width=1.8)
+                ), row=5, col=1)
+                fig_ag.add_hline(y=0, line=dict(color='rgba(255,255,255,0.3)', dash='dot', width=1), row=5, col=1)
 
-                # =====================================================
-                # LAYOUT FINAL — ESTILO PROFIT
-                # =====================================================
+                # ---- LAYOUT FINAL ----
                 fig_ag.update_layout(
                     paper_bgcolor=COR_FUNDO,
                     plot_bgcolor=COR_FUNDO,
                     font=dict(color=COR_PRECO, family='Tahoma', size=10),
-                    height=1000,
+                    height=1100,
                     showlegend=True,
                     legend=dict(
                         orientation='h', yanchor='bottom', y=1.01, xanchor='right', x=1,
-                        bgcolor='rgba(4,32,66,0.85)', bordercolor='#20324A', borderwidth=1, font=dict(size=10)
+                        bgcolor='rgba(4,32,66,0.85)', bordercolor='#20324A', borderwidth=1,
+                        font=dict(size=10)
                     ),
-                    margin=dict(l=5, r=60, t=45, b=10),
+                    margin=dict(l=5, r=65, t=45, b=10),
                     barmode='relative',
                 )
-                # Eixos X
                 fig_ag.update_xaxes(
                     rangeslider_visible=False,
                     gridcolor=COR_GRID, gridwidth=1,
@@ -624,7 +617,6 @@ with tab_agulhadas:
                     tickfont=dict(color=COR_PRECO, size=9),
                     zeroline=False,
                 )
-                # Eixos Y — todos à direita como no Profit
                 fig_ag.update_yaxes(
                     gridcolor=COR_GRID, gridwidth=1,
                     showline=True, linecolor=COR_GRID,
