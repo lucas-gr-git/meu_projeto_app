@@ -118,21 +118,14 @@ def calcular_didi(df_close):
     slow  = sma20 - sma8
     return fast, slow, sma3, sma8, sma20
 
-def detectar_agulhada_pandas(df, col_fast, col_slow):
-    # Condições Atuais
-    compra_atual = (df[col_fast] > 0) & (df[col_slow] < 0)
-    venda_atual  = (df[col_fast] < 0) & (df[col_slow] > 0)
-    
-    # Condições Anteriores (usando .shift(1) para olhar 1 candle para trás)
-    compra_ant = (df[col_fast].shift(1) > 0) & (df[col_slow].shift(1) < 0)
-    venda_ant  = (df[col_fast].shift(1) < 0) & (df[col_slow].shift(1) > 0)
-    
-    # Registra os sinais criando uma nova coluna
-    df['Sinal_Agulhada'] = None
-    df.loc[compra_atual & ~compra_ant, 'Sinal_Agulhada'] = 'COMPRA'
-    df.loc[venda_atual & ~venda_ant, 'Sinal_Agulhada'] = 'VENDA'
-    
-    return df
+def detectar_agulhada(fast, slow):
+    sinais = []
+    for i in range(1, len(fast)):
+        f_ant = fast.iloc[i-1]; f_at = fast.iloc[i]; s_at = slow.iloc[i]
+        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant): continue
+        if f_ant < 0 and f_at > 0 and s_at < 0: sinais.append((fast.index[i], 'COMPRA'))
+        elif f_ant > 0 and f_at < 0 and s_at > 0: sinais.append((fast.index[i], 'VENDA'))
+    return sinais
 
 def black_scholes(S, K, T, r, sigma, tipo='call'):
     if T <= 0 or sigma <= 0: return 0.0
@@ -409,7 +402,7 @@ with tab_agulhadas:
             serie = precos_fechamento[ativo].dropna()
             if len(serie) < 30: continue
             fast, slow, sma3, sma8, sma20 = calcular_didi(serie)
-            sinais = detectar_agulhada_pandas(df, col_fast, col_slow)
+            sinais = detectar_agulhada(fast, slow)
             corte = pd.Timestamp.now() - pd.Timedelta(days=dias_scanner)
             sinais_recentes = [(d, t) for d, t in sinais if d >= corte]
             if sinais_recentes:
