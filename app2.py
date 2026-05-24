@@ -723,7 +723,7 @@ with tab_inteligencia:
                             cor_score = "#228B22" if row["Score"] >= 60 else "#DAA520" if row["Score"] >= 40 else "#B22222"
                             st.markdown(f"""<div style="background:#1e1e1e;border:2px solid {cor_score};border-radius:10px;text-align:center;padding:15px;"><div style="font-size:22px;font-weight:bold;color:white;">{row["Ativo"]}</div><div style="font-size:28px;font-weight:bold;color:{cor_score};">{row["Score"]}</div><div style="font-size:16px;">{row["Estrelas"]}</div><div style="font-size:11px;color:#aaa;">{row["Tendencia"]} | IV: {row["IV Rank (%)"]}% | RSI: {row["RSI"]}</div></div>""", unsafe_allow_html=True)
                     st.markdown("<br>", unsafe_allow_html=True)
-                    st.dataframe(df_score.rename(columns={"Preco": "Preco (R$)", "Tendencia": "Tendencia", "Pts Tendencia": "Pts Tendencia", "Pts IV Rank": "Pts IV Rank", "Pts RSI": "Pts RSI", "Pts Vol": "Pts Vol", "Pts Liquidez": "Pts Liquidez"}), use_container_width=True, hide_index=True)
+                    st.dataframe(df_score, use_container_width=True, hide_index=True)
                     fig_score = go.Figure(); cores_score = ["#228B22" if v >= 60 else "#DAA520" if v >= 40 else "#B22222" for v in df_score["Score"]]
                     fig_score.add_trace(go.Bar(x=df_score["Ativo"], y=df_score["Score"], marker_color=cores_score, text=df_score["Score"], textposition="outside", name="Score"))
                     fig_score.add_hline(y=60, line=dict(color="#228B22", dash="dot"), annotation_text="60 Excelente"); fig_score.add_hline(y=40, line=dict(color="#DAA520", dash="dot"), annotation_text="40 Razoavel")
@@ -872,27 +872,46 @@ with tab_backtest:
                     st.session_state["bt_metricas"] = metricas; st.session_state["bt_df_full"] = df_full
                     st.session_state["bt_ativo"] = bt_ativo; st.session_state["bt_estrat"] = bt_estrategia
                     m1,m2,m3,m4,m5,m6 = st.columns(6)
-                    m1.metric("Capital Final", f"R$ {metricas['Capital Final']:,.2f}")
-                    m2.metric("Retorno", f"{metricas['Retorno Estrategia (%)']:.1f}%", delta=f"{metricas['Retorno Estrategia (%)']-metricas['Retorno BH (%)']:.1f}% vs B&H")
-                    m3.metric("Total Trades", metricas["Total Trades"]); m4.metric("Taxa Acerto", f"{metricas['Taxa Acerto (%)']:.1f}%")
-                    m5.metric("Drawdown Max", f"{metricas['Drawdown Maximo (%)']:.1f}%"); m6.metric("Buy & Hold", f"{metricas['Retorno BH (%)']:.1f}%")
+                    m1.metric("Capital Final", f"R$ {metricas.get('Capital Final',0):,.2f}")
+                    ret_e = metricas.get('Retorno Estrategia (%)', 0); ret_b = metricas.get('Retorno BH (%)', 0)
+                    m2.metric("Retorno", f"{ret_e:.1f}%", delta=f"{ret_e - ret_b:.1f}% vs B&H")
+                    m3.metric("Total Trades", metricas.get("Total Trades", 0))
+                    m4.metric("Taxa Acerto", f"{metricas.get('Taxa Acerto (%)', 0):.1f}%")
+                    m5.metric("Drawdown Max", f"{metricas.get('Drawdown Maximo (%)', 0):.1f}%")
+                    m6.metric("Buy & Hold", f"{ret_b:.1f}%")
                     st.info("Vá para aba Resultados para ver os graficos completos.")
 
     with sub_bt_resultado:
-        if "bt_capital" not in st.session_state: st.info("Configure e rode o backtest primeiro.")
+        _keys_needed = ["bt_capital", "bt_trades", "bt_metricas", "bt_df_full", "bt_ativo", "bt_estrat"]
+        if not all(k in st.session_state for k in _keys_needed):
+            st.info("👈 Configure e rode o backtest na aba **Configurar** primeiro.")
         else:
-            df_trades = st.session_state["bt_trades"]; df_capital = st.session_state["bt_capital"]
-            metricas = st.session_state["bt_metricas"]; df_full = st.session_state["bt_df_full"]
-            bt_ativo = st.session_state["bt_ativo"]; bt_estrat = st.session_state["bt_estrat"]
+            df_trades = st.session_state.get("bt_trades", pd.DataFrame())
+            df_capital = st.session_state.get("bt_capital", pd.DataFrame())
+            metricas = st.session_state.get("bt_metricas", {})
+            df_full = st.session_state.get("bt_df_full", pd.DataFrame())
+            bt_ativo = st.session_state.get("bt_ativo", "")
+            bt_estrat = st.session_state.get("bt_estrat", "")
             st.markdown(f"#### 📊 Resultados — {bt_ativo} | {bt_estrat}")
+            cap_ini  = metricas.get("Capital Inicial", 0)
+            cap_fin  = metricas.get("Capital Final", 0)
+            ret_est  = metricas.get("Retorno Estrategia (%)", 0)
+            ret_bh   = metricas.get("Retorno BH (%)", 0)
+            tx_ac    = metricas.get("Taxa Acerto (%)", 0)
+            dd_max   = metricas.get("Drawdown Maximo (%)", 0)
+            tr_pos   = metricas.get("Trades Positivos", 0)
+            tr_neg   = metricas.get("Trades Negativos", 0)
+            cor_fin  = "#228B22" if cap_fin >= cap_ini else "#B22222"
+            cor_ret  = "#228B22" if ret_est >= 0 else "#B22222"
+            cor_bh   = "#228B22" if ret_bh  >= 0 else "#B22222"
             st.markdown(f"""<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">CAPITAL INICIAL</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">R$ {metricas["Capital Inicial"]:,.2f}</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">CAPITAL FINAL</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{"#228B22" if metricas["Capital Final"]>=metricas["Capital Inicial"] else "#B22222"};">R$ {metricas["Capital Final"]:,.2f}</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">RETORNO ESTRAT.</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{"#228B22" if metricas["Retorno Estrategia (%)"]>=0 else "#B22222"};">{metricas["Retorno Estrategia (%)"]:.2f}%</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">BUY & HOLD</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{"#228B22" if metricas["Retorno BH (%)"]>=0 else "#B22222"};">{metricas["Retorno BH (%)"]:.2f}%</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">TAXA ACERTO</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">{metricas["Taxa Acerto (%)"]:.1f}%</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">DRAWDOWN MAX</div><div style="padding:10px;font-size:16px;font-weight:bold;color:#B22222;">{metricas["Drawdown Maximo (%)"]:.1f}%</div></div>
-                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">TRADES +/-</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">{metricas["Trades Positivos"]}✅/{metricas["Trades Negativos"]}❌</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">CAPITAL INICIAL</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">R$ {cap_ini:,.2f}</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">CAPITAL FINAL</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{cor_fin};">R$ {cap_fin:,.2f}</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">RETORNO ESTRAT.</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{cor_ret};">{ret_est:.2f}%</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">BUY & HOLD</div><div style="padding:10px;font-size:16px;font-weight:bold;color:{cor_bh};">{ret_bh:.2f}%</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">TAXA ACERTO</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">{tx_ac:.1f}%</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">DRAWDOWN MAX</div><div style="padding:10px;font-size:16px;font-weight:bold;color:#B22222;">{dd_max:.1f}%</div></div>
+                <div style="flex:1;min-width:130px;background:#1e1e1e;border:1px solid #333;border-radius:8px;text-align:center;overflow:hidden;"><div style="background:#2b2e35;color:#d4af37;padding:6px;font-weight:bold;font-size:11px;">TRADES +/-</div><div style="padding:10px;font-size:16px;font-weight:bold;color:white;">{tr_pos}✅/{tr_neg}❌</div></div>
             </div>""", unsafe_allow_html=True)
             fig_bt = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.6, 0.4], subplot_titles=("Curva de Capital vs Buy & Hold", "Preco do Ativo com Sinais"))
             cap_norm = (df_capital["Capital"] / metricas["Capital Inicial"] - 1) * 100
