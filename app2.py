@@ -121,10 +121,22 @@ def calcular_didi(df_close):
 def detectar_agulhada(fast, slow):
     sinais = []
     for i in range(1, len(fast)):
-        f_ant = fast.iloc[i-1]; f_at = fast.iloc[i]; s_at = slow.iloc[i]
-        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant): continue
-        if f_ant < 0 and f_at > 0 and s_at < 0: sinais.append((fast.index[i], 'COMPRA'))
-        elif f_ant > 0 and f_at < 0 and s_at > 0: sinais.append((fast.index[i], 'VENDA'))
+        f_ant = fast.iloc[i-1]; f_at = fast.iloc[i]
+        s_ant = slow.iloc[i-1]; s_at = slow.iloc[i]
+        
+        if pd.isna(f_at) or pd.isna(s_at) or pd.isna(f_ant) or pd.isna(s_ant): 
+            continue
+            
+        alinhado_compra_atual = (f_at > 0) and (s_at < 0)
+        alinhado_venda_atual  = (f_at < 0) and (s_at > 0)
+        alinhado_compra_ant = (f_ant > 0) and (s_ant < 0)
+        alinhado_venda_ant  = (f_ant < 0) and (s_ant > 0)
+        
+        if alinhado_compra_atual and not alinhado_compra_ant: 
+            sinais.append((fast.index[i], 'COMPRA'))
+        elif alinhado_venda_atual and not alinhado_venda_ant: 
+            sinais.append((fast.index[i], 'VENDA'))
+            
     return sinais
 
 def black_scholes(S, K, T, r, sigma, tipo='call'):
@@ -932,9 +944,24 @@ with tab_backtest:
             df.loc[df["RSI"] > params.get("rsi_comp", 70), "sinal"] = -1
         elif estrategia == "Agulhada do Didi":
             for i in range(1, len(df)):
-                fa = df["didi_f"].iloc[i-1]; fc = df["didi_f"].iloc[i]; sc = df["didi_s"].iloc[i]
-                if fa < 0 and fc > 0 and sc < 0: df.iloc[i, df.columns.get_loc("sinal")] = 1
-                elif fa > 0 and fc < 0 and sc > 0: df.iloc[i, df.columns.get_loc("sinal")] = -1
+                f_ant = df["didi_f"].iloc[i-1]; f_at = df["didi_f"].iloc[i]
+                s_ant = df["didi_s"].iloc[i-1]; s_at = df["didi_s"].iloc[i]
+                preco_atual = float(df["Close"].iloc[i])
+                sma200_atual = float(df["SMA200"].iloc[i])
+
+                # Verifica o alinhamento no candle ATUAL 
+                compra_atual = (f_at > 0) and (s_at < 0)
+                venda_atual  = (f_at < 0) and (s_at > 0)
+                
+                # Verifica como estava o alinhamento no candle ANTERIOR
+                compra_ant = (f_ant > 0) and (s_ant < 0)
+                venda_ant  = (f_ant < 0) and (s_ant > 0)
+
+                # Gatilho de mudança de estado COM filtro de tendência (SMA200)
+                if (compra_atual and not compra_ant) and (preco_atual > sma200_atual):
+                    df.iloc[i, df.columns.get_loc("sinal")] = 1
+                elif (venda_atual and not venda_ant) and (preco_atual < sma200_atual):
+                    df.iloc[i, df.columns.get_loc("sinal")] = -1
         elif estrategia == "Bollinger Bands":
             df.loc[df["Close"] <= df["BB_lo"], "sinal"] = 1
             df.loc[df["Close"] >= df["BB_up"], "sinal"] = -1
