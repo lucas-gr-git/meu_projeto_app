@@ -466,6 +466,31 @@ with tab_agulhadas:
             st.markdown("#### 🔴 Agulhadas de Venda")
             if not vendas.empty: st.dataframe(vendas[['Ativo','Setor','Data do Sinal','Dias Atrás','Preço no Sinal (R$)','Preço Atual (R$)','Retorno desde Sinal (%)']], use_container_width=True, hide_index=True)
             else: st.info("Nenhuma agulhada de venda no período.")
+        if st.button("📲 Disparar Alertas de Agulhada no Telegram"):
+    with st.spinner("Enviando alertas..."):
+        alertas_enviados = 0
+        
+        for ativo in ativos_lista:
+            # ... (seu código de varredura atual aqui) ...
+            
+            # Se encontrou um sinal RECENTE (ex: hoje ou ontem):
+            if dias_atras <= 1:
+                icone = "🟢" if ultimo_sinal_tipo == 'COMPRA' else "🔴"
+                msg = (
+                    f"{icone} <b>ALERTA DE AGULHADA</b> {icone}\n\n"
+                    f"<b>Ativo:</b> {ativo}\n"
+                    f"<b>Sinal:</b> {ultimo_sinal_tipo}\n"
+                    f"<b>Preço Atual:</b> R$ {preco_atual_ag:.2f}\n"
+                    f"<b>Filtro SMA200:</b> Confirmado ✅\n"
+                )
+                disparar_alerta_telegram(msg)
+                alertas_enviados += 1
+                
+        if alertas_enviados > 0:
+            st.success(f"✅ {alertas_enviados} alertas enviados com sucesso!")
+        else:
+            st.info("Nenhuma agulhada nova hoje para alertar.")
+            
         st.divider()
         st.markdown("### 🔬 Análise Individual do Sinal")
         ativos_com_sinal = df_agulhadas['Ativo'].tolist()
