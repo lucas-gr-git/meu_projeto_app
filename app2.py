@@ -11,6 +11,24 @@ import xml.etree.ElementTree as ET
 import json
 from scipy.stats import norm
 import math
+import requests
+
+def disparar_alerta_telegram(mensagem):
+    # Substitua com as credenciais do seu Bot e o seu ID pessoal
+    TOKEN_BOT = 'SEU_TOKEN_AQUI'
+    CHAT_ID = 'SEU_CHAT_ID_AQUI'
+    
+    url = f"https://api.telegram.org/bot{TOKEN_BOT}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": mensagem,
+        "parse_mode": "HTML" # Permite usar negrito <b> e itálico <i>
+    }
+    
+    try:
+        requests.post(url, data=payload, timeout=5)
+    except Exception as e:
+        pass # Ignora erros silenciosamente para não travar o terminal
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Terminal B3", layout="wide", page_icon="📊")
@@ -485,6 +503,32 @@ with tab_agulhadas:
                 COR_STOCH_ALTA = '#00FFFF'
                 COR_STOCH_BAI  = '#FFFF00'
                 COR_TRIX_TEND  = '#FFFFFF'
+
+if st.button("📲 Disparar Alertas de Agulhada no Telegram"):
+    with st.spinner("Enviando alertas..."):
+        alertas_enviados = 0
+        
+        for ativo in ativos_lista:
+            # ... (seu código de varredura atual aqui) ...
+            
+            # Se encontrou um sinal RECENTE (ex: hoje ou ontem):
+            if dias_atras <= 1:
+                icone = "🟢" if ultimo_sinal_tipo == 'COMPRA' else "🔴"
+                msg = (
+                    f"{icone} <b>ALERTA DE AGULHADA</b> {icone}\n\n"
+                    f"<b>Ativo:</b> {ativo}\n"
+                    f"<b>Sinal:</b> {ultimo_sinal_tipo}\n"
+                    f"<b>Preço Atual:</b> R$ {preco_atual_ag:.2f}\n"
+                    f"<b>Filtro SMA200:</b> Confirmado ✅\n"
+                )
+                disparar_alerta_telegram(msg)
+                alertas_enviados += 1
+                
+        if alertas_enviados > 0:
+            st.success(f"✅ {alertas_enviados} alertas enviados com sucesso!")
+        else:
+            st.info("Nenhuma agulhada nova hoje para alertar.")
+                
                 # =====================================================
                 # INDICADORES
                 # =====================================================
