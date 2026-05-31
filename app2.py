@@ -70,8 +70,14 @@ ativos_lista = list(ativos_setores.keys())
 def carregar_dados(ativos, dias):
     hoje = datetime.today().strftime('%Y-%m-%d')
     inicio = (datetime.today() - timedelta(days=dias)).strftime('%Y-%m-%d')
-    dados = yf.download(ativos, start=inicio, end=hoje)
+    dados = yf.download(ativos, start=inicio, end=hoje, auto_adjust=True, threads=True, progress=False)
     return dados['Close'], dados
+
+@st.cache_data(ttl=60)
+def carregar_dados_rapidos(ativos):
+    """Download rápido de apenas 5 dias para o mapa de calor — TTL de 60s."""
+    dados = yf.download(ativos, period="5d", auto_adjust=True, threads=True, progress=False)
+    return dados['Close']
 
 @st.cache_data(ttl=600)
 def buscar_noticias_google(ativo):
@@ -165,7 +171,10 @@ def volatilidade_historica(serie, janela=21):
     retornos = np.log(serie / serie.shift(1)).dropna()
     return float(retornos.rolling(janela).std().iloc[-1] * math.sqrt(252))
 
+# Dados longos para indicadores técnicos (SMA, RSI) — cache de 5 min
 precos_fechamento, dados_completos = carregar_dados(ativos_lista, 365)
+# Dados rápidos apenas para preço atual e variação diária — cache de 1 min
+precos_rapidos = carregar_dados_rapidos(ativos_lista)
 
 resultados = []
 for ativo in ativos_lista:
@@ -180,12 +189,19 @@ for ativo in ativos_lista:
         perda = (-delta_r.where(delta_r < 0, 0)).rolling(window=14).mean()
         rs = ganho / perda
         df['RSI'] = 100 - (100 / (1 + rs))
-        ultimo_preco = float(df['Close'].dropna().iloc[-1]) if not df['Close'].dropna().empty else 0
         sma50 = float(df['SMA50'].dropna().iloc[-1]) if not df['SMA50'].dropna().empty else 0
         sma100 = float(df['SMA100'].dropna().iloc[-1]) if not df['SMA100'].dropna().empty else 0
         sma200 = float(df['SMA200'].dropna().iloc[-1]) if not df['SMA200'].dropna().empty else 0
         rsi = float(df['RSI'].dropna().iloc[-1]) if not df['RSI'].dropna().empty else np.nan
-        variacao_diaria = float(df['Close'].dropna().pct_change().iloc[-1] * 100) if len(df['Close'].dropna()) > 1 else 0.0
+        # Usa dados rápidos (1 min TTL) para preço e variação
+        if ativo in precos_rapidos.columns:
+            serie_rapida = precos_rapidos[ativo].dropna()
+            ultimo_preco = float(serie_rapida.iloc[-1]) if not serie_rapida.empty else 0
+            variacao_diaria = float(serie_rapida.pct_change().iloc[-1] * 100) if len(serie_rapida) > 1 else 0.0
+        else:
+            serie_longa = df['Close'].dropna()
+            ultimo_preco = float(serie_longa.iloc[-1]) if not serie_longa.empty else 0
+            variacao_diaria = float(serie_longa.pct_change().iloc[-1] * 100) if len(serie_longa) > 1 else 0.0
         tendencia_curta = 'Alta' if ultimo_preco > sma50 else 'Baixa'
         tendencia_media = 'Alta' if ultimo_preco > sma100 else 'Baixa'
         tendencia_longa = 'Alta' if ultimo_preco > sma200 else 'Baixa' if sma200 > 0 else 'N/A'
@@ -212,7 +228,15 @@ tab_visao_geral, tab_analise_individual, tab_agulhadas, tab_opcoes, tab_intelige
 # ABA 1: VISÃO GERAL
 # ==============================================================================
 with tab_visao_geral:
-    st.markdown("### 📊 Mapa de Calor do Mercado")
+    col_title, col_refresh = st.columns([4, 1])
+    with col_title:
+        st.markdown("### 📊 Mapa de Calor do Mercado")
+    with col_refresh:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🔄 Atualizar Agora", use_container_width=True):
+            carregar_dados_rapidos.clear()
+            st.rerun()
+    st.caption(f"⏱️ Preços e variações atualizados a cada 60s · Indicadores técnicos a cada 5 min · Última carga: {datetime.now().strftime('%H:%M:%S')}")
     ids, labels, parents, values, colors, customdata = ["B3"], ["B3"], [""], [0], ["#2b2e35"], [["<b>Painel Geral B3</b>", "<b>B3</b>"]]
     for setor in df_resumo['Setor'].unique():
         ids.append(setor); labels.append(setor); parents.append("B3"); values.append(0); colors.append("#2b2e35")
