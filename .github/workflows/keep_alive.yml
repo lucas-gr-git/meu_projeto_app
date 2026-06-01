@@ -1,0 +1,16 @@
+name: Keep Alive
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping app 1
+        run: curl -L "https://meuprojetoapp-e4www9q2t9elogsqxfe4hm.streamlit.app/"
+
+      - name: Ping app 2
+        run: curl -L "https://projetorm2-mbbj9yxwm8f7w3ejzhpkgk.streamlit.app/"
